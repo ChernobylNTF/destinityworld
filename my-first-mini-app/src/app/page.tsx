@@ -118,16 +118,18 @@ export default function Home() {
 
   return (
     <Page>
-      {/* Cambiado className de Page.Main a justify-between y eliminado gap-4 */}
-      <Page.Main className="flex flex-col items-center justify-between p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white min-h-screen">
+      {/* Cambiado className de Page.Main a justify-center y eliminado gap-4 */}
+      <Page.Main className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white min-h-screen">
 
         {/* Div con el componente UserInfo - En la parte superior */}
-        <div className="text-xl">
-          <UserInfo />
-        </div>
+        {/* Mover UserInfo fuera del contenedor centrado si queremos que se quede arriba */}
 
         {/* Contenedor para los elementos inferiores (centrados) - Añadido flex, flex-col, items-center y gap-4 */}
         <div className="flex flex-col items-center gap-4">
+           {/* Div con el componente UserInfo - Ahora dentro del contenedor centrado para que suba con los demás */}
+          <div className="text-xl">
+             <UserInfo />
+          </div>
           {/* Componente de la moneda 3D de IPFS */}
           <SpinningCoin ipfsUrl={coinIpfsUrl} />
 

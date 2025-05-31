@@ -14,7 +14,7 @@ export const UserInfo = () => {
   const session = useSession();
 
   return (
-    <div className="flex flex-row items-center justify-start gap-4 rounded-xl w-full border-2 border-gray-200 p-4">
+    <div className="flex flex-row items-center justify-start gap-4 rounded-m w-full border-2 border-gray-200 p-4">
       <Marble src={session?.data?.user?.profilePictureUrl} className="w-14" />
       <div className="flex flex-row items-center justify-center">
         <span className="text-m font-semibold capitalize">
