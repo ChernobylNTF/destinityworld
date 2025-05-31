@@ -60,7 +60,7 @@ const CoinModel = ({ ipfsUrl }: { ipfsUrl: string }) => {
                                                                                                                                               }, [ipfsUrl]);
 
                                                                                                                                                 return (
-                                                                                                                                                    <div className="h-170 w-170 mx-auto">
+                                                                                                                                                    <div className="h-190 w-190 mx-auto">
                                                                                                                                                           <Canvas key={`canvas-${key}`}>
                                                                                                                                                                   <ambientLight intensity={0.5} />
                                                                                                                                                                           <pointLight position={[10, 10, 10]} intensity={1} />
