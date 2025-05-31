@@ -29,7 +29,7 @@ export default function Home() {
   const [lastClaimTime, setLastClaimTime] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [claiming, setClaiming] = useState(false);
-
+  
   // Cargar el último tiempo de reclamo del almacenamiento local al cargar la página
   useEffect(() => {
     const savedClaimTime = localStorage.getItem('lastClaimTime');
@@ -127,7 +127,7 @@ export default function Home() {
         {/* Contenedor para los elementos inferiores (centrados) - Añadido flex, flex-col, items-center y gap-4 */}
         <div className="flex flex-col items-center gap-4">
            {/* Div con el componente UserInfo - Ahora dentro del contenedor centrado para que suba con los demás */}
-          <div className="text-xl">
+          <div className="text-s">
              <UserInfo />
           </div>
           {/* Componente de la moneda 3D de IPFS */}
