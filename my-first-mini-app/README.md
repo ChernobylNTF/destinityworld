@@ -1,4 +1,4 @@
-## Create a Mini App
+# Destinity World
 
 [Mini apps](https://docs.worldcoin.org/mini-apps) enable third-party developers to create native-like applications within World App.
 
