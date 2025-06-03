@@ -7,7 +7,7 @@ import { useState } from 'react';
  * This component is an example of how to use World ID in Mini Apps
  * Minikit commands must be used on client components
  * It's critical you verify the proof on the server side
- * Read More: https://docs.world.org/mini-apps/commands/verify#verifying-the-proof
+ * Read More: https://docs.world.org/mini-apps/commands/verifying-the-proof
  */
 // Modificado para aceptar la prop onSuccess
 export const Verify = ({ onSuccess }: { onSuccess: () => void }) => {
@@ -18,6 +18,10 @@ export const Verify = ({ onSuccess }: { onSuccess: () => void }) => {
   const [whichVerification, setWhichVerification] = useState<VerificationLevel>(
     VerificationLevel.Device,
   );
+
+  // >>> Añadimos una variable para controlar la visibilidad del botón Orb <<<
+  const showOrbButton = false; // Cambia a true si quieres mostrarlo de nuevo
+  // >>> Fin de la variable <<<
 
   const onClickVerify = async (verificationLevel: VerificationLevel) => {
     setButtonState('pending');
@@ -79,27 +83,32 @@ export const Verify = ({ onSuccess }: { onSuccess: () => void }) => {
           Verify (Device)
         </Button>
       </LiveFeedback>
-      <LiveFeedback
-        label={{
-          failed: 'Failed to verify',
-          pending: 'Verifying',
-          success: 'Verified',
-        }}
-        state={
-          whichVerification === VerificationLevel.Orb ? buttonState : undefined
-        }
-        className="w-full"
-      >
-        <Button
-          onClick={() => onClickVerify(VerificationLevel.Orb)}
-          disabled={buttonState === 'pending'}
-          size="lg"
-          variant="primary"
+
+      {/* >>> Condición para renderizar el botón Orb <<< */}
+      {showOrbButton && (
+        <LiveFeedback
+          label={{
+            failed: 'Failed to verify',
+            pending: 'Verifying',
+            success: 'Verified',
+          }}
+          state={
+            whichVerification === VerificationLevel.Orb ? buttonState : undefined
+          }
           className="w-full"
         >
-          Verify (Orb)
-        </Button>
-      </LiveFeedback>
+          <Button
+            onClick={() => onClickVerify(VerificationLevel.Orb)}
+            disabled={buttonState === 'pending'}
+            size="lg"
+            variant="primary"
+            className="w-full"
+          >
+            Verify (Orb)
+          </Button>
+        </LiveFeedback>
+      )}
+      {/* >>> Fin de la condición <<< */}
     </div>
   );
 };
