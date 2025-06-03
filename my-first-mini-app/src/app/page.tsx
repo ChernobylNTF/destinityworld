@@ -4,12 +4,12 @@ import { Navigation } from '../components/Navigation';
 import { Page } from '@/components/PageLayout';
 import { AuthButton } from '../components/AuthButton';
 import { Verify } from '../components/Verify';
-import { UserInfo } from '../components/UserInfo'; // Importar UserInfo
-import { Button } from '@worldcoin/mini-apps-ui-kit-react';
+// Removed import of UserInfo as it's no longer used here
+import { Button, TopBar } from '@worldcoin/mini-apps-ui-kit-react'; // Added TopBar import
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { MiniKit } from '@worldcoin/minikit-js'; // Importar MiniKit
-import { getIsUserVerified } from "@worldcoin/minikit-js"
+import { MiniKit } from '@worldcoin/minikit-js';
+import { getIsUserVerified } from "@worldcoin/minikit-js";
 // Importar el ABI del contrato DWD
 import DWDABI from '@/abi/DWD.json';
 
@@ -17,10 +17,10 @@ import DWDABI from '@/abi/DWD.json';
 import SpinningCoin from '../components/SpinningCoin';
 
 // Dirección del contrato DWD
-const contractAddress = '0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0'; // Dirección del contrato DWD
+const contractAddress = '0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0';
 
 // CID de la moneda 3D en IPFS y nombre del archivo
-  const coinIpfsUrl = "https://gateway.pinata.cloud/ipfs/bafybeielalf3z7q7x7vngejt53qosizddaltox7laqngxjdqhf2vyn6egq";// <--- LÍNEA AÑADIDA
+  const coinIpfsUrl = "https://gateway.pinata.cloud/ipfs/bafybeielalf3z7q7x7vngejt53qosizddaltox7laqngxjdqhf2vyn6egq";
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -30,7 +30,7 @@ export default function Home() {
   const [lastClaimTime, setLastClaimTime] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [claiming, setClaiming] = useState(false);
-  
+
   // Cargar el último tiempo de reclamo del almacenamiento local al cargar la página
   useEffect(() => {
     const savedClaimTime = localStorage.getItem('lastClaimTime');
@@ -119,18 +119,17 @@ export default function Home() {
 
   return (
     <Page>
+      {/* Added Page.Header with TopBar to display username at the top left */}
+      <Page.Header className="p-0">
+        <TopBar title={session?.data?.user?.username} />
+      </Page.Header>
+
       {/* Cambiado className de Page.Main a justify-center y eliminado gap-4 */}
       <Page.Main className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white min-h-screen">
 
-        {/* Div con el componente UserInfo - En la parte superior */}
-        {/* Mover UserInfo fuera del contenedor centrado si queremos que se quede arriba */}
-
         {/* Contenedor para los elementos inferiores (centrados) - Añadido flex, flex-col, items-center y gap-4 */}
         <div className="flex flex-col items-center gap-4">
-           {/* Div con el componente UserInfo - Ahora dentro del contenedor centrado para que suba con los demás */}
-          <div className="text-s">
-             <UserInfo />
-          </div>
+
           {/* Componente de la moneda 3D de IPFS */}
           <SpinningCoin ipfsUrl={coinIpfsUrl} />
 
@@ -175,4 +174,4 @@ export default function Home() {
 // Añadir un tipo para la propiedad onSuccess en el componente Verify
 declare module '../components/Verify' {
   export const Verify: ({ onSuccess }: { onSuccess: () => void }) => JSX.Element;
-          }
+}
