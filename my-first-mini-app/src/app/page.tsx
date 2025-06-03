@@ -1,5 +1,6 @@
 'use client';
 
+import { Navigation } from '../components/Navigation';
 import { Page } from '@/components/PageLayout';
 import { AuthButton } from '../components/AuthButton';
 import { Verify } from '../components/Verify';
@@ -174,4 +175,4 @@ export default function Home() {
 // Añadir un tipo para la propiedad onSuccess en el componente Verify
 declare module '../components/Verify' {
   export const Verify: ({ onSuccess }: { onSuccess: () => void }) => JSX.Element;
-}
+          }
