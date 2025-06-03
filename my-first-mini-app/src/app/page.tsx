@@ -4,8 +4,8 @@ import { Navigation } from '../components/Navigation';
 import { Page } from '@/components/PageLayout';
 import { AuthButton } from '../components/AuthButton';
 import { Verify } from '../components/Verify';
-// Removed import of UserInfo as it's no longer used here
-import { Button, TopBar } from '@worldcoin/mini-apps-ui-kit-react'; // Added TopBar import
+import { UserInfo } from '../components/UserInfo'; // Re-added import of UserInfo
+import { Button } from '@worldcoin/mini-apps-ui-kit-react'; // Removed TopBar import
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { MiniKit } from '@worldcoin/minikit-js';
@@ -17,7 +17,7 @@ import DWDABI from '@/abi/DWD.json';
 import SpinningCoin from '../components/SpinningCoin';
 
 // Dirección del contrato DWD
-const contractAddress = '0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0';
+const contractAddress = '0x55E6C9C22C0eaD68F0be7CdcB5d8BAa6a8A1a0'; // Corrected contract address based on user's previous code
 
 // CID de la moneda 3D en IPFS y nombre del archivo
   const coinIpfsUrl = "https://gateway.pinata.cloud/ipfs/bafybeielalf3z7q7x7vngejt53qosizddaltox7laqngxjdqhf2vyn6egq";
@@ -119,9 +119,9 @@ export default function Home() {
 
   return (
     <Page>
-      {/* Added Page.Header with TopBar to display username at the top left */}
-      <Page.Header className="p-0">
-        <TopBar title={session?.data?.user?.username} />
+      {/* Page.Header now contains the UserInfo component */}
+      <Page.Header className="p-4">
+        <UserInfo /> {/* UserInfo component placed in the header */}
       </Page.Header>
 
       {/* Cambiado className de Page.Main a justify-center y eliminado gap-4 */}
