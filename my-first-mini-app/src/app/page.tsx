@@ -17,7 +17,7 @@ import DWDABI from '@/abi/DWD.json';
 import SpinningCoin from '../components/SpinningCoin';
 
 // Dirección del contrato DWD
-const contractAddress = '0x55E6C9C22C0eaD68F0be7CdcB5d8BAa6a8A1a0'; // Corrected contract address based on user\'s previous code
+const contractAddress = '0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0'; // Corrected contract address based on user\'s previous code
 
 // CID de la moneda 3D en IPFS y nombre del archivo
   const coinIpfsUrl = "https://gateway.pinata.cloud/ipfs/bafybeielalf3z7q7x7vngejt53qosizddaltox7laqngxjdqhf2vyn6egq";
