@@ -17,7 +17,7 @@ import DWDABI from '@/abi/DWD.json';
 import SpinningCoin from '../components/SpinningCoin';
 
 // Dirección del contrato DWD
-const contractAddress = '0x55E6C9C22C0eaD68F0be7CdcB5d8BAa6a8A1a0'; // Corrected contract address based on user's previous code
+const contractAddress = '0x55E6C9C22C0eaD68F0be7CdcB5d8BAa6a8A1a0'; // Corrected contract address based on user\'s previous code
 
 // CID de la moneda 3D en IPFS y nombre del archivo
   const coinIpfsUrl = "https://gateway.pinata.cloud/ipfs/bafybeielalf3z7q7x7vngejt53qosizddaltox7laqngxjdqhf2vyn6egq";
@@ -77,7 +77,7 @@ export default function Home() {
           {
             address: contractAddress,
             abi: DWDABI.abi as any, // Usar el ABI del contrato DWD
-            functionName: 'claim', // Llamar a la función 'claim'
+            functionName: 'claim', // Llamar a la función \'claim\'
             args: [], // Asumiendo que la función claim no requiere argumentos
           },
         ],
@@ -119,8 +119,8 @@ export default function Home() {
 
   return (
     <Page>
-      {/* Page.Header now contains the UserInfo component */}
-      <Page.Header className="p-4">
+      {/* Page.Header now contains the UserInfo component with the dark gradient background */}
+      <Page.Header className="p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white"> {/* Added dark gradient and text-white */}
         <UserInfo /> {/* UserInfo component placed in the header */}
       </Page.Header>
 
