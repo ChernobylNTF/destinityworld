@@ -14,10 +14,10 @@ export const UserInfo = () => {
   const session = useSession();
 
   return (
-    <div className="flex flex-row items-center justify-start gap-4 rounded-m w-full border-2 border-gray-200 p-4">
-      <Marble src={session?.data?.user?.profilePictureUrl} className="w-4" />
+    <div className="flex flex-row items-center justify-start gap-4 rounded-m w-full p-4 text-white"> {/* Removed background and border classes, kept padding and rounded corners, ensured text is white */}
+      <Marble src={session?.data?.user?.profilePictureUrl} className="w-14" />
       <div className="flex flex-row items-center justify-center">
-        <span className="text-m font-semibold capitalize">
+        <span className="text-m font-semibold capitalize text-white"> {/* Ensured text is white */}
           {session?.data?.user?.username}
         </span>
         {session?.data?.user?.profilePictureUrl && (
