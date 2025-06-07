@@ -5,7 +5,7 @@ import { Page } from '@/components/PageLayout';
 import { AuthButton } from '../components/AuthButton';
 import { Verify } from '../components/Verify';
 import { UserInfo } from '../components/UserInfo'; // Re-added import of UserInfo
-import { Button, Top } from '@worldcoin/mini-apps-ui-kit-react'; // Removed TopBar import
+import { Button } from '@worldcoin/mini-apps-ui-kit-react'; // Removed TopBar import
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { MiniKit } from '@worldcoin/minikit-js';
