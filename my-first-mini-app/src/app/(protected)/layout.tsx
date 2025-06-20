@@ -2,6 +2,7 @@ import { auth } from '@/auth';
 import Navigation from '@/components/Navigation'; // Cambiado a importación por defecto
 import { Page } from '@/components/PageLayout';
 import { redirect } from 'next/navigation';
+import { SessionProvider } from 'next-auth/react';
 
 export default async function TabsLayout({
   children,
@@ -12,11 +13,12 @@ export default async function TabsLayout({
 
   // If the user is not authenticated, redirect to the login page
   if (!session) {
-    console.log('Not authenticated');
-    // redirect('/');
+    console.log('Not authenticated, redirecting...');
+    redirect('/');
   }
 
   return (
+    <SessionProvider session={session}>
     <Page className="bg-gradient-to-br from-gray-900 to-blue-900 text-white">
       {/* Aquí van los children (las páginas como Home, Wallet, Info) */}
       {children}
@@ -25,5 +27,6 @@ export default async function TabsLayout({
         <Navigation />
       </Page.Footer>
     </Page>
+  </SessionProvider>
   );
 }
