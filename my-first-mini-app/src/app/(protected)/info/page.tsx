@@ -34,7 +34,7 @@ const InfoPage = () => {
               <strong>Proyecto:</strong> Destinity Mini App
             </p>
             <p>
-              <strong>Tecnología:</strong> Next.js, React, Worldcoin Minikit, Viem.js
+              <strong>Tecnología:</strong> Next.js, React, Worldcoin Minikit, Three.js
             </p>
             <p>
               <strong>Blockchain:</strong> Worldchain (Sepolia Testnet)
