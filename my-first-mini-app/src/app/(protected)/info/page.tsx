@@ -11,7 +11,6 @@ const InfoPage = () => {
   return (
     <>
       <Page.Header className="p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white">
-        <UserInfo />
         <TopBar
           title="Info"
           endAdornment={
