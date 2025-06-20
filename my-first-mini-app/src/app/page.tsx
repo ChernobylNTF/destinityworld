@@ -1,6 +1,6 @@
 'use client';
 
-import { Navigation } from '../components/Navigation';
+import Navigation from '../components/Navigation';
 import { Page } from '@/components/PageLayout';
 import { AuthButton } from '../components/AuthButton';
 import { Verify } from '../components/Verify';
