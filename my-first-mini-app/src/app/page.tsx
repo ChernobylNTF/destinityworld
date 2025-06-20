@@ -166,6 +166,7 @@ export default function Home() {
         </div>
 
         {/* Este comentario u otros elementos fuera del nuevo div contenedor quedarían entre los dos grupos. */}
+        <Navigation />
       </Page.Main>
     </Page>
   );
