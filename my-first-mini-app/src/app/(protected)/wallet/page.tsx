@@ -55,15 +55,15 @@ const WalletPage = () => {
 
   return (
     <>
-      <Page.Header className="p-0">
+      <Page.Header className="p-0 bg-gradient-to-br from-gray-900 to-blue-900">
         <TopBar
           title="Wallet"
           endAdornment={
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <p className="text-sm font-semibold capitalize">
                 {session?.user.username}
               </p>
-              <Marble src={session?.user.profilePictureUrl} className="w-12" />
+              <Marble src={session?.user.profilePictureUrl} className="w-4" />
             </div>
           }
         />
