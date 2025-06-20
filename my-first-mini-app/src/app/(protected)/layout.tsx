@@ -17,10 +17,10 @@ export default async function TabsLayout({
 
   return (
     <Page>
-      <Navigation />
       {children}
-      <Page.Footer className="px-0 fixed bottom-0 w-full bg-white">
-
+      {/* Asegúrate de que Navigation esté aquí y no en Page.Main */}
+      <Page.Footer className="px-0 fixed bottom-0 w-full bg-white z-50">
+        <Navigation />
       </Page.Footer>
     </Page>
   );
