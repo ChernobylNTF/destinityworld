@@ -120,7 +120,7 @@ export default function Home() {
   return (
     <Page>
       {/* Page.Header now contains the UserInfo component with the dark gradient background */}
-      <Page.Header className="p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white"> {/* Added dark gradient and text-white */}
+      <Page.Header className="p-0 bg-gradient-to-br from-gray-900 to-blue-900 text-white"> {/* Added dark gradient and text-white */}
         <UserInfo /> {/* UserInfo component placed in the header */}
       </Page.Header>
 
