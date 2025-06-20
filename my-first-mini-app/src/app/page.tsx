@@ -166,10 +166,13 @@ export default function Home() {
         </div>
 
         {/* Este comentario u otros elementos fuera del nuevo div contenedor quedarían entre los dos grupos. */}
-        <Navigation />
-        
-        
+          
       </Page.Main>
+
+      <Page.Footer className="px-0 fixed bottom-0 w-full bg-white z-50">
+    <Navigation />
+  </Page.Footer>
+</Page>
     </Page>
   );
 }
