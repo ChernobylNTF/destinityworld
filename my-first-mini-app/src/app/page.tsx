@@ -172,7 +172,6 @@ export default function Home() {
       <Page.Footer className="px-0 fixed bottom-0 w-full bg-white z-50">
     <Navigation />
   </Page.Footer>
-</Page>
     </Page>
   );
 }
