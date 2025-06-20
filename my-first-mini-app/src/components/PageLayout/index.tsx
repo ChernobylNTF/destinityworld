@@ -1,4 +1,3 @@
---- START OF FILE destinityworld-my-first-mini-app/my-first-mini-app/src/components/PageLayout/index.tsx ---
 
 import clsx from 'clsx';
 import { ReactNode } from 'react';
