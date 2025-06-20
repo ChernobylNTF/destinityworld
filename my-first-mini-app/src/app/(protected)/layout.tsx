@@ -17,9 +17,10 @@ export default async function TabsLayout({
   }
 
   return (
-    <Page>
+    <Page className="bg-gradient-to-br from-gray-900 to-blue-900 text-white">
+      {/* Aquí van los children (las páginas como Home, Wallet, Info) */}
       {children}
-      {/* Asegúrate de que Navigation esté aquí y no en Page.Main */}
+      {/* La navegación va en el footer */}
       <Page.Footer className="px-0 fixed bottom-0 w-full bg-white z-50">
         <Navigation />
       </Page.Footer>
