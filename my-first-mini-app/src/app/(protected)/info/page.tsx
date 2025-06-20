@@ -10,7 +10,7 @@ const InfoPage = () => {
 
   return (
     <>
-      <Page.Header className="p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white">
+      <Page.Header className="p-1 bg-gradient-to-br from-gray-900 to-blue-900 text-white">
         <TopBar
           title="Info"
           endAdornment={
@@ -18,7 +18,7 @@ const InfoPage = () => {
               <p className="text-sm font-semibold capitalize">
                 {session?.user.username}
               </p>
-              <Marble src={session?.user.profilePictureUrl} className="w-12" />
+              <Marble src={session?.user.profilePictureUrl} className="w-4" />
             </div>
           }
         />
