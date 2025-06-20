@@ -54,4 +54,3 @@ const Footer = (props: { children: ReactNode; className?: string }) => {
 Page.Header = Header;
 Page.Main = Main;
 Page.Footer = Footer;
----
