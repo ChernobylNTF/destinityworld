@@ -1,5 +1,4 @@
-// src/app/layout.tsx
-// ¡Este archivo DEBE SER un Server Component! NO debe tener 'use client';
+'use client';
 
 import ClientProviders from '@/providers'; // Asegúrate de que ClientProviders envuelva SessionProvider
 // ¡IMPORTANTE! La importación de auth DEBE estar aquí para obtener la sesión
