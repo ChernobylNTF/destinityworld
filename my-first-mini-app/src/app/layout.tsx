@@ -1,4 +1,4 @@
-// src/app/layout.tsx
+
 'use client'; // Next.js 13+ App Router requiere 'use client' en el layout si usa hooks de cliente
 
 import { auth } from '@/auth'; // Importar auth para obtener la sesión en server component
