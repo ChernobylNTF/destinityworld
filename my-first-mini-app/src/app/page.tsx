@@ -148,8 +148,6 @@ export default function HomePage() {
   };
 
   return (
-    
-    <>
     <Page>
       {/* Header con el modelo 3D y la información del usuario */}
       <Page.Header className="p-0 bg-gradient-to-br from-gray-900 to-blue-900 text-white">
