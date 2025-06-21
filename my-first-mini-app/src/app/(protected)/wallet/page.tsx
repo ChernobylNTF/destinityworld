@@ -14,15 +14,15 @@ import { worldchain } from 'viem/chains';
 const contractAddress = '0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0'; // Dirección de tu contrato DWD
 
 const WalletPage = () => {
-  const { data: session } = useSession();
-  const walletAddress = MiniKit.walletAddress
+  const username = MiniKit.user.username
+  const walletAddress = window.MiniKit?.walletAddress
   const [dwdBalance, setDwdBalance] = useState<string | null>(null);
   const [loadingBalance, setLoadingBalance] = useState(false);
 
   // Configurar el cliente viem una vez
   const publicClient = createPublicClient({
     chain: worldchain,
-    transport: http('https://worldchain-sepolia.g.alchemy.com/public'),
+    transport: http('https://worldchain-mainnet.g.alchemy.com/public'),
   });
 
   // Función para obtener el balance de DWD
