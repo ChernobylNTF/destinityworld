@@ -1,3 +1,5 @@
+'use client';
+
 import { auth } from '@/auth';
 import Navigation from '@/components/Navigation'; // Cambiado a importación por defecto
 import { Page } from '@/components/PageLayout';
