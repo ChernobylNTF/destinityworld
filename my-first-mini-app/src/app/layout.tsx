@@ -1,5 +1,5 @@
 
-'use client'; // Next.js 13+ App Router requiere 'use client' en el layout si usa hooks de cliente
+'use client';
 
 import { auth } from '@/auth'; // Importar auth para obtener la sesión en server component
 import ClientProviders from '@/providers'; // Asegúrate de que ClientProviders maneje el SessionProvider
