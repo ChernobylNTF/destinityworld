@@ -1,12 +1,16 @@
+// src/app/layout.tsx
+// ¡Este archivo DEBE SER un Server Component! NO debe tener 'use client';
 
+import ClientProviders from '@/providers'; // Asegúrate de que ClientProviders envuelva SessionProvider
+// ¡IMPORTANTE! La importación de auth DEBE estar aquí para obtener la sesión
 import { auth } from '@/auth';
-import ClientProviders from '@/providers'; // Asegúrate de que ClientProviders maneje el SessionProvider
 import '@worldcoin/mini-apps-ui-kit-react/styles.css';
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
+// Definición de fuentes (pueden estar aquí o en un archivo metadata.tsx separado)
 const geistSans = Geist({
   variable: '--font-geist-sans',
   subsets: ['latin'],
@@ -17,6 +21,7 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+// Exportamos metadata
 export const metadata: Metadata = {
   title: 'Destinity World',
   description: 'DWD',
@@ -27,16 +32,16 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await auth(); // Obtener la sesión en el server component
+  // Obtenemos la sesión aquí, en el Server Component del layout raíz
+  const session = await auth();
 
   return (
     <html lang="en">
-      {/* Aplicar las fuentes globales al body */}
       <body className={`${geistSans.variable} ${geistMono.variable} `}>
-        {/* ClientProviders debería encargarse de envolver todo con SessionProvider y ErudaProvider */}
-        {/* Pasamos la sesión obtenida en el server component al cliente */}
+        {/* ClientProviders recibe la sesión y la pasa a SessionProvider */}
+        {/* Esto asegura que la sesión esté disponible para todos los componentes cliente */}
         <ClientProviders session={session}>
-          {children} {/* Aquí se renderizarán las páginas, incluyendo app/page.tsx */}
+          {children} {/* Aquí se renderizará app/page.tsx */}
         </ClientProviders>
         <SpeedInsights />
       </body>
