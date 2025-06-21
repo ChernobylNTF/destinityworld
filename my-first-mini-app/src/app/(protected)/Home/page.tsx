@@ -149,7 +149,7 @@ export default function Home() {
   return (
     
       {/* Page.Header con modelo 3D y UserInfo */}
-      <Page.Header className="p-0 bg-gradient-to-br from-gray-900 to-blue-900 text-white"> {/* Estilos del tema oscuro y texto blanco */}
+      <Page.Header className="bg-gradient-to-br from-gray-900 to-blue-900 text-white"> {/* Estilos del tema oscuro y texto blanco */}
         <div className="flex items-center justify-between w-full">
           <SpinningCoin ipfsUrl={coinIpfsUrl} /> {/* Modelo 3D a la izquierda */}
 
