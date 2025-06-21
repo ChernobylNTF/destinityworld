@@ -1,3 +1,5 @@
+'use client';
+
 import { auth } from '@/auth';
 import { Page } from '@/components/PageLayout';
 import { Pay } from '@/components/Pay';
