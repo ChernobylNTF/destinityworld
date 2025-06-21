@@ -15,7 +15,7 @@ const contractAddress = '0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0'; // Direcci
 
 const WalletPage = () => {
   const { data: session } = useSession();
-  const walletAddress = session?.user?.walletAddress;
+  const walletAddress = MiniKit.walletAddress
   const [dwdBalance, setDwdBalance] = useState<string | null>(null);
   const [loadingBalance, setLoadingBalance] = useState(false);
 
@@ -61,7 +61,7 @@ const WalletPage = () => {
           endAdornment={
             <div className="flex items-center gap-1">
               <p className="text-sm font-semibold capitalize">
-                {session?.user.username, session?.user.walletAddress}
+                {session?.user.username}
               </p>
               <Marble src={session?.user.profilePictureUrl} className="w-4" />
             </div>
