@@ -59,7 +59,7 @@ export const Verify = ({ onSuccess }: { onSuccess: () => void }) => {
 
   return (
     <div className="grid w-full gap-1">
-      <p className="text-lg font-semibold">Verificación</p>
+      <p className="text-lg font-semibold"></p>
       <LiveFeedback
         label={{
           failed: 'Failed to verify',
@@ -80,7 +80,7 @@ export const Verify = ({ onSuccess }: { onSuccess: () => void }) => {
           variant="tertiary"
           className="w-full"
         >
-          👁️‍🗨️
+          ⚠️ Verificación
         </Button>
       </LiveFeedback>
 
