@@ -13,7 +13,7 @@ export default async function Home() {
   const session = await auth();
 
   return (
-    <>
+    
       <Page.Header className="p-0 bg-gradient-to-br from-gray-900 to-blue-900">
         <TopBar
           title="Home"
