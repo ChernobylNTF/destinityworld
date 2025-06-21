@@ -81,7 +81,7 @@ const WalletPage = () => {
                   rel="noopener noreferrer"
                   className="text-blue-500 hover:underline"
                 >
-                  {walletAddress: '0x...'}
+                  {walletAddress}
                 </a>
               ) : (
                 'Cargando...'
@@ -105,5 +105,3 @@ const WalletPage = () => {
 };
 
 export default WalletPage;
-export type User = {
-	walletAddress?: string
