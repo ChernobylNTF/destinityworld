@@ -61,7 +61,7 @@ const WalletPage = () => {
           endAdornment={
             <div className="flex items-center gap-1">
               <p className="text-sm font-semibold capitalize">
-                {session?.user.username}
+                {session?.user.username, session?.user.walletAddress}
               </p>
               <Marble src={session?.user.profilePictureUrl} className="w-4" />
             </div>
@@ -76,7 +76,7 @@ const WalletPage = () => {
               <strong>Dirección:</strong>{' '}
               {walletAddress ? (
                 <a
-                  href={`https://worldscan.org/address/${walletAddress}`}
+                  href={`https://worldchain-mainnet.explorer.alchemy.com/${walletAddress}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-500 hover:underline"
