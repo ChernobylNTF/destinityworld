@@ -14,7 +14,7 @@ import SpinningCoin from '../components/SpinningCoin'; // El modelo 3D
 import { AuthButton } from '../components/AuthButton'; // Botón de login
 import { Verify } from '../components/Verify'; // Componente de verificación
 import { UserInfo } from '../components/UserInfo'; // Información del usuario
-import { Navigation } from '../components/Navigation'; // Componente de navegación
+import Navigation from '../components/Navigation'; // Componente de navegación
 
 // Dirección del contrato DWD
 const contractAddress = '0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0';
