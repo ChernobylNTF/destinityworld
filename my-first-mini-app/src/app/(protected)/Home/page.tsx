@@ -149,7 +149,7 @@ export default function Home() {
   return (
     
       {/* Page.Header con modelo 3D y UserInfo */}
-      <Page.Header className="bg-gradient-to-br from-gray-900 to-blue-900 text-white"> {/* Estilos del tema oscuro y texto blanco */}
+      <Header className="bg-gradient-to-br from-gray-900 to-blue-900 text-white"> {/* Estilos del tema oscuro y texto blanco */}
         <div className="flex items-center justify-between w-full">
           <SpinningCoin ipfsUrl={coinIpfsUrl} /> {/* Modelo 3D a la izquierda */}
 
@@ -175,10 +175,10 @@ export default function Home() {
             )}
           </div>
         </div>
-      </Page.Header>
+      </Header>
 
       {/* Contenido principal de la página */}
-      <Page.Main className="flex flex-col items-center justify-start gap-4 p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white min-h-screen">
+      <Main className="flex flex-col items-center justify-start gap-4 p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white min-h-screen">
         {/* Sección de Verificación */}
         {!isAuthenticated && (
           <div className="w-full max-w-sm">
@@ -244,7 +244,7 @@ export default function Home() {
           </div>
         )}
 
-      </Page.Main>
+      </Main>
 
       {/* Navegación en el Footer de Page */}
       <Page.Footer className="px-0 fixed bottom-0 w-full bg-white z-50">
