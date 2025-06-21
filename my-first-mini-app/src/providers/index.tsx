@@ -1,8 +1,8 @@
 // src/providers/index.tsx
-'use client';
+'use client'; // Este SÍ es un Client Component
 import { MiniKitProvider } from '@worldcoin/minikit-js/minikit-provider';
 import { Session } from 'next-auth';
-import { SessionProvider } from 'next-auth/react'; // Importa SessionProvider
+import { SessionProvider } from 'next-auth/react'; // Importado correctamente
 import dynamic from 'next/dynamic';
 import type { ReactNode } from 'react';
 
@@ -13,7 +13,7 @@ const ErudaProvider = dynamic(
 
 interface ClientProvidersProps {
   children: ReactNode;
-  session: Session | null; // La sesión obtenida del server component
+  session: Session | null; // La sesión se pasa desde el layout raíz
 }
 
 export default function ClientProviders({
@@ -22,7 +22,7 @@ export default function ClientProviders({
 }: ClientProvidersProps) {
   return (
     <ErudaProvider>
-      {/* SessionProvider debe envolver todo lo que necesite acceder a la sesión */}
+      {/* SessionProvider es crucial aquí para que useSession() funcione en los componentes cliente */}
       <SessionProvider session={session}>
         <MiniKitProvider>
           {children}
