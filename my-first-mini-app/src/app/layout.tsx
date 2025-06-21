@@ -1,7 +1,4 @@
 
-'use client';
-
-import { auth } from '@/auth'; // Importar auth para obtener la sesión en server component
 import ClientProviders from '@/providers'; // Asegúrate de que ClientProviders maneje el SessionProvider
 import '@worldcoin/mini-apps-ui-kit-react/styles.css';
 import type { Metadata } from 'next';
