@@ -68,7 +68,7 @@ const WalletPage = () => {
           }
         />
       </Page.Header>
-      <Page.Main className="flex flex-col items-center justify-start gap-4 mb-16">
+      <Page.Header className="flex flex-col items-center justify-start gap-4 mb-16">
         <div className="grid w-full gap-4">
           <p className="text-lg font-semibold">Información de la Billetera</p>
           <div className="flex flex-col gap-2 p-4 border border-gray-700 rounded-lg">
@@ -99,7 +99,7 @@ const WalletPage = () => {
         </div>
 
         {/* Aquí podrías añadir más detalles o funcionalidades de billetera */}
-      </Page.Main>
+      </Page.Header>
     </>
   );
 };
