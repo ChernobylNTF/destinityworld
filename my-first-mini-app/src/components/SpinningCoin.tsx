@@ -61,7 +61,7 @@ const SpinningCoin: React.FC<{ ipfsUrl?: string }> = ({
 
   return (
     // He ajustado el tamaño del div contenedor para que coincida con el placeholder
-    <div className="h-48 w-48 mx-auto"> 
+    <div className="h-90 w-90 mx-auto"> 
       <Canvas key={`canvas-${key}`}>
         {/*
           LA ÚNICA MODIFICACIÓN:
