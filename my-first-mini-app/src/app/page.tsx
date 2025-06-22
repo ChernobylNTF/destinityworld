@@ -87,7 +87,9 @@ export default function Home() {
     } else if (transactionId && isConfirmed && receipt) {
       setClaimStatus('success');
       setOnChainTxHash(receipt.transactionHash);
-      setTimeout(() => { refreshClaimStatus(); }, 2000);
+      setTimeout(() => {
+        refreshClaimStatus();
+      }, 2000);
       setTimeout(() => { setClaimStatus('idle'); setTransactionId(''); }, 8000);
     } else if (transactionId && isError) {
       setClaimStatus('error');
@@ -116,6 +118,7 @@ export default function Home() {
   
   const handleVerificationSuccess = () => setIsVerified(true);
 
+  // --- FUNCIÓN DE RECLAMO CORREGIDA FINAL ---
   const handleClaimTokens = async () => {
     const canClaim = !isClaimStatusLoading && (!nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000));
     if (!canClaim || claimStatus !== 'idle') return;
@@ -125,17 +128,15 @@ export default function Home() {
     setOnChainTxHash('');
 
     try {
-      const permit = {
-        permitted: { token: DWD_CONTRACT_ADDRESS, amount: (1 * 10 ** 18).toString() },
-        spender: DWD_CONTRACT_ADDRESS,
-        nonce: Date.now().toString(),
-        deadline: Math.floor((Date.now() + 30 * 60 * 1000) / 1000).toString(),
-      };
-
       const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
-        transaction: [{ address: DWD_CONTRACT_ADDRESS, abi: DWDABI.abi as any, functionName: 'claim', args: [] }],
-        permit2: [permit],
-        formatPayload: false, // <-- La solución clave que encontraste
+        transaction: [{ 
+          address: DWD_CONTRACT_ADDRESS, 
+          abi: DWDABI.abi as any, 
+          functionName: 'claim', 
+          args: [] 
+        }],
+        // Se omite el payload de 'permit2' para la función `claim`,
+        // ya que esto parece ser la causa del error "invalid_token".
       });
 
       if (finalPayload.status === 'success' && finalPayload.transaction_id) {
