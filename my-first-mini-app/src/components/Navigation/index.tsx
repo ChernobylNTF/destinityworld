@@ -16,7 +16,7 @@ const Navigation = () => {
           <Link href="/staking">Staking</Link>
         </li>
         <li>
-          <Link href="/perfil">Perfil</Link>Link>
+          <Link href="/perfil">Perfil</Link>
         </li>
         <li>
           <Link href="/info">Info</Link> {/* Cambiamos el texto y la ruta a /info */}
