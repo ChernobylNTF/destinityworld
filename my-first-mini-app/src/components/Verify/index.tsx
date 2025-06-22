@@ -72,6 +72,7 @@ export const Verify = ({ onSuccess }: { onSuccess: () => void }) => {
             : undefined
         }
         className="w-full"
+        >
         <Button
           onClick={() => onClickVerify(VerificationLevel.Device)}
           disabled={buttonState === 'pending'}
