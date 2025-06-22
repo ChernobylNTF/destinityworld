@@ -136,16 +136,18 @@ export default function Home() {
         deadline: Math.floor((Date.now() + 30 * 60 * 1000) / 1000).toString(), // Válido por 30 mins
       };
 
+      // ... dentro de la función handleClaimTokens
+
       const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
-        transaction: [{ 
-          address: DWD_CONTRACT_ADDRESS, 
-          abi: DWDABI.abi as any, 
-          functionName: 'claim', 
-          args: [] 
-        }],
-        // Adjuntamos el permiso requerido
+        transaction: [{ address: DWD_CONTRACT_ADDRESS, abi: DWDABI.abi as any, functionName: 'claim', args: [] }],
         permit2: [permit],
+        
+        // --- AQUÍ ESTÁ LA SOLUCIÓN ---
+        // Le decimos al MiniKit que no formatee el payload.
+        formatPayload: false, 
       });
+
+// ...
 
       if (finalPayload.status === 'success' && finalPayload.transaction_id) {
         setTransactionId(finalPayload.transaction_id);
