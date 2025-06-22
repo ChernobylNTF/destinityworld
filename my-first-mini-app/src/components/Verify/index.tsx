@@ -58,7 +58,7 @@ export const Verify = ({ onSuccess }: { onSuccess: () => void }) => {
   };
 
   return (
-    <div
+    <div className="grid w-full gap-4">
       <p className="text-lg font-semibold"></p>
       <LiveFeedback
         label={{
