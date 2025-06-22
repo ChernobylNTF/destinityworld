@@ -8,15 +8,15 @@ import { UserInfo } from '../components/UserInfo';
 import { Button } from '@worldcoin/mini-apps-ui-kit-react';
 import { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link'; // Importamos Link para el enlace al explorador
 
 // Importar el componente de la moneda 3D
 import SpinningCoin from '../components/SpinningCoin';
 
 // --- LÓGICA DE BLOCKCHAIN ---
 import { MiniKit, getIsUserVerified } from "@worldcoin/minikit-js";
-// --- ¡IMPORTANTE! Se importa el hook oficial del SDK ---
 import { useWaitForTransactionReceipt } from '@worldcoin/minikit-react';
-import { createPublicClient, http } from 'viem';
+import { createPublicClient, http, type TransactionReceipt } from 'viem';
 import { worldchain } from 'viem/chains';
 import DWDABI from '@/abi/DWD.json';
 
@@ -24,6 +24,7 @@ import DWDABI from '@/abi/DWD.json';
 const DWD_CONTRACT_ADDRESS = '0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0';
 const WORLDCHAIN_RPC_URL = 'https://worldchain-sepolia.g.alchemy.com/public';
 const coinIpfsUrl = "https://gateway.pinata.cloud/ipfs/bafybeielalf3z7q7x7vngejt53qosizddaltox7laqngxjdqhf2vyn6egq";
+const EXPLORER_URL = "https://sepolia.worldscan.org";
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -32,46 +33,41 @@ export default function Home() {
 
   const [isVerified, setIsVerified] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
-  const [claimSuccess, setClaimSuccess] = useState<string | null>(null);
+  const [claimStatus, setClaimStatus] = useState<'idle' | 'sending' | 'confirming' | 'success' | 'error'>('idle');
   const [nextClaimTimestamp, setNextClaimTimestamp] = useState<number | null>(null);
   const [countdown, setCountdown] = useState('');
-  
-  // --- NUEVO ESTADO PARA EL ID DE LA TRANSACCIÓN ---
   const [transactionId, setTransactionId] = useState<string>('');
+  const [onChainTxHash, setOnChainTxHash] = useState<string>('');
 
   const publicClient = useMemo(() => createPublicClient({
-    chain: worldchain,
-    transport: http(WORLDCHAIN_RPC_URL),
+    chain: worldchain, transport: http(WORLDCHAIN_RPC_URL),
   }), []);
 
-  // --- HOOK OFICIAL DEL SDK PARA ESPERAR LA CONFIRMACIÓN ---
+  // --- HOOK OFICIAL DEL SDK ---
   const {
+    data: receipt,
     isLoading: isConfirming,
     isSuccess: isConfirmed,
     isError,
   } = useWaitForTransactionReceipt({
     client: publicClient,
-    appConfig: {
-      app_id: process.env.NEXT_PUBLIC_APP_ID as `app_${string}`,
-    },
+    appConfig: { app_id: process.env.NEXT_PUBLIC_APP_ID as `app_${string}` },
     transactionId: transactionId,
   });
 
-  // Función para leer el estado del reclamo DESDE EL CONTRATO
+  // Función para leer el estado del reclamo del contrato
   const refreshClaimStatus = async () => {
     if (!walletAddress) return;
     try {
-      const lastClaim = await publicClient.readContract({
-        address: DWD_CONTRACT_ADDRESS, abi: DWDABI.abi, functionName: 'lastMint', args: [walletAddress as `0x${string}`],
-      });
-      const claimFrequency = await publicClient.readContract({
-        address: DWD_CONTRACT_ADDRESS, abi: DWDABI.abi, functionName: 'CLAIM_FREQUENCY_SECONDS'
-      });
+      const [lastClaim, claimFrequency] = await Promise.all([
+        publicClient.readContract({ address: DWD_CONTRACT_ADDRESS, abi: DWDABI.abi, functionName: 'lastMint', args: [walletAddress as `0x${string}`] }),
+        publicClient.readContract({ address: DWD_CONTRACT_ADDRESS, abi: DWDABI.abi, functionName: 'CLAIM_FREQUENCY_SECONDS' })
+      ]);
       setNextClaimTimestamp(Number(lastClaim) + Number(claimFrequency));
     } catch (err) { console.error("Error al obtener estado de reclamo:", err); }
   };
 
-  // Chequeo automático de verificación y estado de reclamo
+  // Chequeo inicial de estado
   useEffect(() => {
     const checkStatus = async () => {
       if (isAuthenticated && walletAddress) {
@@ -87,20 +83,24 @@ export default function Home() {
 
   // --- useEffect QUE REACCIONA AL ESTADO DE LA TRANSACCIÓN ---
   useEffect(() => {
-    if (transactionId) {
-      if (isConfirmed) {
-        setClaimSuccess('¡Tokens reclamados con éxito!');
+    if (transactionId && isConfirming) {
+      setClaimStatus('confirming');
+    } else if (transactionId && isConfirmed && receipt) {
+      setClaimStatus('success');
+      setOnChainTxHash(receipt.transactionHash); // Guardamos el HASH REAL
+      // --- SOLUCIÓN: Pequeña pausa para dar tiempo al nodo RPC ---
+      setTimeout(() => {
         refreshClaimStatus(); // Refrescamos el temporizador
-        setTimeout(() => { setClaimSuccess(null); setTransactionId(''); }, 5000);
-      } else if (isError) {
-        setClaimError('La transacción falló.');
-        setTimeout(() => { setClaimError(null); setTransactionId(''); }, 5000);
-      }
+      }, 2000); // 2 segundos de espera
+      setTimeout(() => { setClaimStatus('idle'); setTransactionId(''); }, 8000); // Limpiamos estado después de 8s
+    } else if (transactionId && isError) {
+      setClaimStatus('error');
+      setClaimError('La transacción falló en la red.');
+      setTimeout(() => { setClaimStatus('idle'); setTransactionId(''); }, 5000);
     }
-  }, [isConfirmed, isError, transactionId]);
+  }, [isConfirming, isConfirmed, isError, receipt, transactionId]);
 
-
-  // Manejar el temporizador
+  // Manejo del temporizador
   useEffect(() => {
     if (!nextClaimTimestamp) return;
     const interval = setInterval(() => {
@@ -118,61 +118,58 @@ export default function Home() {
     }, 1000);
     return () => clearInterval(interval);
   }, [nextClaimTimestamp]);
-
+  
   const handleVerificationSuccess = () => setIsVerified(true);
 
-  // --- FUNCIÓN DE RECLAMO USANDO EL PATRÓN DEL SDK ---
+  // --- FUNCIÓN DE RECLAMO ---
   const handleClaimTokens = async () => {
     const canClaim = !nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000);
-    if (!canClaim || isConfirming) return;
+    if (!canClaim || claimStatus !== 'idle') return;
 
+    setClaimStatus('sending');
     setClaimError(null);
-    setClaimSuccess(null);
+    setOnChainTxHash('');
 
     try {
       const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
-        transaction: [{
-          address: DWD_CONTRACT_ADDRESS,
-          abi: DWDABI.abi as any,
-          functionName: 'claim',
-          args: [],
-        }],
+        transaction: [{ address: DWD_CONTRACT_ADDRESS, abi: DWDABI.abi as any, functionName: 'claim', args: [] }],
       });
-
       if (finalPayload.status === 'success' && finalPayload.transaction_id) {
-        // Solo guardamos el ID. El hook se encargará del resto.
-        setTransactionId(finalPayload.transaction_id);
+        setTransactionId(finalPayload.transaction_id); // El hook se encargará del resto
       } else {
-        throw new Error(finalPayload.error_code ?? 'La transacción fue rechazada en el MiniKit.');
+        throw new Error(finalPayload.error_code ?? 'Transacción rechazada en MiniKit.');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error al iniciar el reclamo:", err);
-      setClaimError("La transacción fue rechazada por el usuario.");
-      setTimeout(() => setClaimError(null), 5000);
+      setClaimError(err.message);
+      setClaimStatus('idle');
     }
   };
   
   const canClaim = !nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000);
 
+  const getButtonText = () => {
+    switch (claimStatus) {
+      case 'sending': return 'Enviando...';
+      case 'confirming': return 'Confirmando...';
+      default: return 'Reclamar Tokens';
+    }
+  };
+
   return (
     <Page>
-      <Page.Header className="p-0 bg-gradient-to-br from-gray-900 to-blue-900 text-white">
-        <UserInfo />
-      </Page.Header>
-
+      <Page.Header className="p-0 bg-gradient-to-br from-gray-900 to-blue-900 text-white"><UserInfo /></Page.Header>
       <Page.Main className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white min-h-screen">
         <div className="flex flex-col items-center gap-4">
           <p className="text-5xl font-black text-yellow-600 yellow:text-white">DESTINITY</p>
           <SpinningCoin ipfsUrl={coinIpfsUrl} />
-
           {!isAuthenticated && <div className="w-full max-w-sm"><AuthButton /></div>}
           {isAuthenticated && !isVerified && <div className="w-full max-w-sm"><Verify onSuccess={handleVerificationSuccess} /></div>}
-          
           {isAuthenticated && isVerified && (
             <div className="w-full max-w-sm text-center mt-4">
               {canClaim ? (
-                <Button onClick={handleClaimTokens} disabled={isConfirming} size="lg" variant="primary" className="w-full">
-                  {isConfirming ? 'Confirmando...' : 'Reclamar Tokens'}
+                <Button onClick={handleClaimTokens} disabled={claimStatus !== 'idle'} size="lg" variant="primary" className="w-full">
+                  {getButtonText()}
                 </Button>
               ) : (
                 <div>
@@ -180,24 +177,28 @@ export default function Home() {
                   <p className="text-xl font-bold">{countdown || 'Calculando...'}</p>
                 </div>
               )}
-              <div className="h-6 mt-2 text-sm">
-                {isConfirming && <p className="text-yellow-400">Transacción en proceso...</p>}
-                {claimSuccess && <p className="text-green-400">{claimSuccess}</p>}
-                {claimError && <p className="text-red-400">{claimError}</p>}
+              <div className="h-10 mt-2 text-sm flex flex-col items-center justify-center">
+                {claimStatus === 'error' && <p className="text-red-400">{claimError}</p>}
+                {claimStatus === 'success' && (
+                  <div className="text-center">
+                    <p className="text-green-400">¡Tokens reclamados con éxito!</p>
+                    {onChainTxHash && (
+                      <Link href={`${EXPLORER_URL}/tx/${onChainTxHash}`} target="_blank" className="text-blue-400 hover:underline text-xs">
+                        Ver transacción
+                      </Link>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
         </div>
       </Page.Main>
-
-      <Page.Footer className="px-0 fixed bottom-0 w-full bg-white z-50">
-        <Navigation />
-      </Page.Footer>
+      <Page.Footer className="px-0 fixed bottom-0 w-full bg-white z-50"><Navigation /></Page.Footer>
     </Page>
   );
 }
 
-// Declaración de módulo para Verify
 declare module '../components/Verify' {
   export const Verify: ({ onSuccess }: { onSuccess: () => void }) => JSX.Element;
 }
