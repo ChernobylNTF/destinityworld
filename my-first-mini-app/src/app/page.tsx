@@ -14,6 +14,8 @@ import SpinningCoin from '../components/SpinningCoin';
 
 // --- LÓGICA DE BLOCKCHAIN ---
 import { MiniKit, getIsUserVerified } from "@worldcoin/minikit-js";
+// --- ¡IMPORTANTE! Se importa el hook oficial del SDK ---
+import { useWaitForTransactionReceipt } from '@worldcoin/minikit-react';
 import { createPublicClient, http } from 'viem';
 import { worldchain } from 'viem/chains';
 import DWDABI from '@/abi/DWD.json';
@@ -29,17 +31,31 @@ export default function Home() {
   const walletAddress = session?.user?.walletAddress;
 
   const [isVerified, setIsVerified] = useState(false);
-  const [isClaiming, setIsClaiming] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
   const [claimSuccess, setClaimSuccess] = useState<string | null>(null);
   const [nextClaimTimestamp, setNextClaimTimestamp] = useState<number | null>(null);
   const [countdown, setCountdown] = useState('');
+  
+  // --- NUEVO ESTADO PARA EL ID DE LA TRANSACCIÓN ---
+  const [transactionId, setTransactionId] = useState<string>('');
 
-  // Cliente público (para leer datos de la blockchain).
   const publicClient = useMemo(() => createPublicClient({
     chain: worldchain,
     transport: http(WORLDCHAIN_RPC_URL),
   }), []);
+
+  // --- HOOK OFICIAL DEL SDK PARA ESPERAR LA CONFIRMACIÓN ---
+  const {
+    isLoading: isConfirming,
+    isSuccess: isConfirmed,
+    isError,
+  } = useWaitForTransactionReceipt({
+    client: publicClient,
+    appConfig: {
+      app_id: process.env.NEXT_PUBLIC_APP_ID as `app_${string}`,
+    },
+    transactionId: transactionId,
+  });
 
   // Función para leer el estado del reclamo DESDE EL CONTRATO
   const refreshClaimStatus = async () => {
@@ -52,33 +68,37 @@ export default function Home() {
         address: DWD_CONTRACT_ADDRESS, abi: DWDABI.abi, functionName: 'CLAIM_FREQUENCY_SECONDS'
       });
       setNextClaimTimestamp(Number(lastClaim) + Number(claimFrequency));
-    } catch (err) {
-      console.error("Error al obtener estado de reclamo:", err);
-    }
+    } catch (err) { console.error("Error al obtener estado de reclamo:", err); }
   };
 
   // Chequeo automático de verificación y estado de reclamo
   useEffect(() => {
     const checkStatus = async () => {
-      // Condición de guarda principal: No hacer NADA hasta tener la sesión y la dirección.
-      if (!isAuthenticated || !walletAddress) {
-        return;
+      if (isAuthenticated && walletAddress) {
+        try {
+          const verificationStatus = await getIsUserVerified();
+          if (verificationStatus.isVerified) setIsVerified(true);
+        } catch (e) { console.warn("No se pudo comprobar la verificación:", e); }
+        await refreshClaimStatus();
       }
-      
-      // Si llegamos aquí, es seguro proceder.
-      try {
-        const verificationStatus = await getIsUserVerified();
-        if (verificationStatus.isVerified) {
-          setIsVerified(true);
-        }
-      } catch (e) { console.warn("No se pudo comprobar la verificación:", e); }
-      
-      // Ahora es seguro llamar a esta función.
-      await refreshClaimStatus();
     };
-
     checkStatus();
   }, [isAuthenticated, walletAddress]);
+
+  // --- useEffect QUE REACCIONA AL ESTADO DE LA TRANSACCIÓN ---
+  useEffect(() => {
+    if (transactionId) {
+      if (isConfirmed) {
+        setClaimSuccess('¡Tokens reclamados con éxito!');
+        refreshClaimStatus(); // Refrescamos el temporizador
+        setTimeout(() => { setClaimSuccess(null); setTransactionId(''); }, 5000);
+      } else if (isError) {
+        setClaimError('La transacción falló.');
+        setTimeout(() => { setClaimError(null); setTransactionId(''); }, 5000);
+      }
+    }
+  }, [isConfirmed, isError, transactionId]);
+
 
   // Manejar el temporizador
   useEffect(() => {
@@ -99,21 +119,17 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [nextClaimTimestamp]);
 
-  const handleVerificationSuccess = () => {
-    setIsVerified(true);
-  };
+  const handleVerificationSuccess = () => setIsVerified(true);
 
-  // --- FUNCIÓN DE RECLAMO CON MiniKit (la más confiable) ---
+  // --- FUNCIÓN DE RECLAMO USANDO EL PATRÓN DEL SDK ---
   const handleClaimTokens = async () => {
     const canClaim = !nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000);
-    if (!canClaim || isClaiming) return;
+    if (!canClaim || isConfirming) return;
 
-    setIsClaiming(true);
     setClaimError(null);
     setClaimSuccess(null);
 
     try {
-      // Usamos el comando oficial de MiniKit para enviar la transacción
       const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
         transaction: [{
           address: DWD_CONTRACT_ADDRESS,
@@ -124,20 +140,15 @@ export default function Home() {
       });
 
       if (finalPayload.status === 'success' && finalPayload.transaction_id) {
-        setClaimSuccess("Transacción enviada, esperando confirmación...");
-        // Usamos nuestro cliente viem para esperar a que la transacción sea confirmada
-        await publicClient.waitForTransactionReceipt({ hash: finalPayload.transaction_id });
-        setClaimSuccess("¡Tokens reclamados con éxito!");
-        await refreshClaimStatus(); // Actualizamos el temporizador desde la blockchain
+        // Solo guardamos el ID. El hook se encargará del resto.
+        setTransactionId(finalPayload.transaction_id);
       } else {
-        throw new Error(finalPayload.error_code ?? 'La transacción falló en el MiniKit.');
+        throw new Error(finalPayload.error_code ?? 'La transacción fue rechazada en el MiniKit.');
       }
     } catch (err) {
-      console.error("Error al reclamar tokens:", err);
-      setClaimError("La transacción falló o fue rechazada.");
-    } finally {
-      setIsClaiming(false);
-      setTimeout(() => { setClaimSuccess(null); setClaimError(null); }, 5000);
+      console.error("Error al iniciar el reclamo:", err);
+      setClaimError("La transacción fue rechazada por el usuario.");
+      setTimeout(() => setClaimError(null), 5000);
     }
   };
   
@@ -160,8 +171,8 @@ export default function Home() {
           {isAuthenticated && isVerified && (
             <div className="w-full max-w-sm text-center mt-4">
               {canClaim ? (
-                <Button onClick={handleClaimTokens} disabled={isClaiming} size="lg" variant="primary" className="w-full">
-                  {isClaiming ? 'Reclamando...' : 'Reclamar Tokens'}
+                <Button onClick={handleClaimTokens} disabled={isConfirming} size="lg" variant="primary" className="w-full">
+                  {isConfirming ? 'Confirmando...' : 'Reclamar Tokens'}
                 </Button>
               ) : (
                 <div>
@@ -170,6 +181,7 @@ export default function Home() {
                 </div>
               )}
               <div className="h-6 mt-2 text-sm">
+                {isConfirming && <p className="text-yellow-400">Transacción en proceso...</p>}
                 {claimSuccess && <p className="text-green-400">{claimSuccess}</p>}
                 {claimError && <p className="text-red-400">{claimError}</p>}
               </div>
@@ -188,4 +200,4 @@ export default function Home() {
 // Declaración de módulo para Verify
 declare module '../components/Verify' {
   export const Verify: ({ onSuccess }: { onSuccess: () => void }) => JSX.Element;
-      }
+}
