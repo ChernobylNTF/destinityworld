@@ -12,7 +12,8 @@ import { useSession } from 'next-auth/react';
 // Importar el componente de la moneda 3D
 import SpinningCoin from '../components/SpinningCoin';
 
-// --- NUEVAS IMPORTACIONES PARA LA LÓGICA DE BLOCKCHAIN ---
+// --- LÓGICA DE BLOCKCHAIN ---
+import { getIsUserVerified } from "@worldcoin/minikit-js";
 import { createPublicClient, createWalletClient, custom, http } from 'viem';
 import { worldchain } from 'viem/chains';
 import DWDABI from '@/abi/DWD.json';
@@ -28,27 +29,17 @@ export default function Home() {
   const walletAddress = session?.user?.walletAddress;
 
   const [isVerified, setIsVerified] = useState(false);
-
-  // --- ESTADOS REEMPLAZADOS: AHORA CONTROLADOS POR LA BLOCKCHAIN ---
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
   const [claimSuccess, setClaimSuccess] = useState<string | null>(null);
   const [nextClaimTimestamp, setNextClaimTimestamp] = useState<number | null>(null);
   const [countdown, setCountdown] = useState('');
 
-  // Cliente público (para leer datos de la blockchain)
+  // Cliente público (para leer datos).
   const publicClient = useMemo(() => createPublicClient({
     chain: worldchain,
     transport: http(WORLDCHAIN_RPC_URL),
   }), []);
-
-  // Cliente de billetera (para firmar y enviar transacciones)
-  const walletClient = useMemo(() => {
-    if (typeof window !== 'undefined' && window.ethereum) {
-      return createWalletClient({ chain: worldchain, transport: custom(window.ethereum) });
-    }
-    return null;
-  }, []);
 
   // Función para leer el estado del reclamo DESDE EL CONTRATO
   const refreshClaimStatus = async () => {
@@ -57,7 +48,6 @@ export default function Home() {
       const lastClaim = await publicClient.readContract({
         address: DWD_CONTRACT_ADDRESS, abi: DWDABI.abi, functionName: 'lastMint', args: [walletAddress as `0x${string}`],
       });
-      // Leemos el tiempo de espera directamente del contrato
       const claimFrequency = await publicClient.readContract({
         address: DWD_CONTRACT_ADDRESS, abi: DWDABI.abi, functionName: 'CLAIM_FREQUENCY_SECONDS'
       });
@@ -67,20 +57,32 @@ export default function Home() {
     }
   };
 
-  // Se ejecuta cuando el usuario se autentica
+  // --- MEJORA: Chequeo automático de verificación ---
   useEffect(() => {
-    if (isAuthenticated) {
-      refreshClaimStatus();
-    }
+    const checkStatus = async () => {
+      if (isAuthenticated) {
+        try {
+          // Comprobamos si el usuario ya está verificado
+          const verificationStatus = await getIsUserVerified();
+          if (verificationStatus.isVerified) {
+            setIsVerified(true);
+          }
+        } catch (e) {
+            console.warn("No se pudo comprobar la verificación:", e);
+        }
+        // Siempre refrescamos el estado del reclamo
+        refreshClaimStatus();
+      }
+    };
+    checkStatus();
   }, [isAuthenticated, walletAddress]);
 
-  // Manejar el temporizador de cuenta regresiva
+  // Manejar el temporizador
   useEffect(() => {
     if (!nextClaimTimestamp) return;
     const interval = setInterval(() => {
       const now = Math.floor(Date.now() / 1000);
       const secondsLeft = nextClaimTimestamp - now;
-
       if (secondsLeft > 0) {
         const h = Math.floor(secondsLeft / 3600).toString().padStart(2, '0');
         const m = Math.floor((secondsLeft % 3600) / 60).toString().padStart(2, '0');
@@ -88,7 +90,7 @@ export default function Home() {
         setCountdown(`${h}:${m}:${s}`);
       } else {
         setCountdown('');
-        setNextClaimTimestamp(null); // Permite reclamar
+        setNextClaimTimestamp(null);
       }
     }, 1000);
     return () => clearInterval(interval);
@@ -98,28 +100,44 @@ export default function Home() {
     setIsVerified(true);
   };
 
-  // --- FUNCIÓN DE RECLAMO ACTUALIZADA ---
+  // --- FUNCIÓN DE RECLAMO CORREGIDA ---
   const handleClaimTokens = async () => {
-    if (!walletClient || !walletAddress || !canClaim || isClaiming) return;
+    const canClaim = !nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000);
+    
+    if (!walletAddress || !canClaim || isClaiming) {
+        console.warn("Pre-conditions for claiming not met.");
+        return;
+    }
+
+    if (typeof window === 'undefined' || !window.ethereum) {
+      console.error("World App provider (window.ethereum) not found.");
+      setClaimError("No se pudo conectar con la billetera.");
+      return;
+    }
 
     setIsClaiming(true);
     setClaimError(null);
     setClaimSuccess(null);
 
     try {
+      // Creamos el cliente para firmar JUSTO AHORA
+      const walletClient = createWalletClient({
+        chain: worldchain,
+        transport: custom(window.ethereum),
+      });
+
       const hash = await walletClient.writeContract({
         address: DWD_CONTRACT_ADDRESS, abi: DWDABI.abi, functionName: 'claim', account: walletAddress as `0x${string}`,
       });
       setClaimSuccess("Transacción enviada, esperando confirmación...");
       await publicClient.waitForTransactionReceipt({ hash });
       setClaimSuccess("¡Tokens reclamados con éxito!");
-      await refreshClaimStatus(); // Volvemos a leer el estado para actualizar el temporizador
+      await refreshClaimStatus(); // Actualizamos el temporizador desde la blockchain
     } catch (err) {
       console.error("Error al reclamar tokens:", err);
       setClaimError("La transacción falló o fue rechazada.");
     } finally {
       setIsClaiming(false);
-      // Limpiamos los mensajes después de 5 segundos
       setTimeout(() => { setClaimSuccess(null); setClaimError(null); }, 5000);
     }
   };
@@ -139,8 +157,7 @@ export default function Home() {
 
           {!isAuthenticated && <div className="w-full max-w-sm"><AuthButton /></div>}
           {isAuthenticated && !isVerified && <div className="w-full max-w-sm"><Verify onSuccess={handleVerificationSuccess} /></div>}
-
-          {/* --- LÓGICA DE VISTA ACTUALIZADA --- */}
+          
           {isAuthenticated && isVerified && (
             <div className="w-full max-w-sm text-center mt-4">
               {canClaim ? (
@@ -153,7 +170,6 @@ export default function Home() {
                   <p className="text-xl font-bold">{countdown || 'Calculando...'}</p>
                 </div>
               )}
-              {/* Contenedor para mensajes de estado */}
               <div className="h-6 mt-2 text-sm">
                 {claimSuccess && <p className="text-green-400">{claimSuccess}</p>}
                 {claimError && <p className="text-red-400">{claimError}</p>}
@@ -170,7 +186,7 @@ export default function Home() {
   );
 }
 
-// Declaración de módulo para Verify (sin cambios)
+// Declaración de módulo para Verify
 declare module '../components/Verify' {
   export const Verify: ({ onSuccess }: { onSuccess: () => void }) => JSX.Element;
 }
