@@ -13,8 +13,8 @@ import { useSession } from 'next-auth/react';
 import SpinningCoin from '../components/SpinningCoin';
 
 // --- LÓGICA DE BLOCKCHAIN ---
-import { getIsUserVerified } from "@worldcoin/minikit-js";
-import { createPublicClient, createWalletClient, custom, http } from 'viem';
+import { MiniKit, getIsUserVerified } from "@worldcoin/minikit-js";
+import { createPublicClient, http } from 'viem';
 import { worldchain } from 'viem/chains';
 import DWDABI from '@/abi/DWD.json';
 
@@ -35,7 +35,7 @@ export default function Home() {
   const [nextClaimTimestamp, setNextClaimTimestamp] = useState<number | null>(null);
   const [countdown, setCountdown] = useState('');
 
-  // Cliente público (para leer datos).
+  // Cliente público (para leer datos de la blockchain).
   const publicClient = useMemo(() => createPublicClient({
     chain: worldchain,
     transport: http(WORLDCHAIN_RPC_URL),
@@ -57,21 +57,17 @@ export default function Home() {
     }
   };
 
-  // --- MEJORA: Chequeo automático de verificación ---
+  // Chequeo automático de verificación y estado de reclamo
   useEffect(() => {
     const checkStatus = async () => {
       if (isAuthenticated) {
         try {
-          // Comprobamos si el usuario ya está verificado
           const verificationStatus = await getIsUserVerified();
           if (verificationStatus.isVerified) {
             setIsVerified(true);
           }
-        } catch (e) {
-            console.warn("No se pudo comprobar la verificación:", e);
-        }
-        // Siempre refrescamos el estado del reclamo
-        refreshClaimStatus();
+        } catch (e) { console.warn("No se pudo comprobar la verificación:", e); }
+        await refreshClaimStatus();
       }
     };
     checkStatus();
@@ -100,39 +96,35 @@ export default function Home() {
     setIsVerified(true);
   };
 
-  // --- FUNCIÓN DE RECLAMO CORREGIDA ---
+  // --- FUNCIÓN DE RECLAMO CON MiniKit ---
   const handleClaimTokens = async () => {
     const canClaim = !nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000);
-    
-    if (!walletAddress || !canClaim || isClaiming) {
-        console.warn("Pre-conditions for claiming not met.");
-        return;
-    }
-
-    if (typeof window === 'undefined' || !window.ethereum) {
-      console.error("World App provider (window.ethereum) not found.");
-      setClaimError("No se pudo conectar con la billetera.");
-      return;
-    }
+    if (!canClaim || isClaiming) return;
 
     setIsClaiming(true);
     setClaimError(null);
     setClaimSuccess(null);
 
     try {
-      // Creamos el cliente para firmar JUSTO AHORA
-      const walletClient = createWalletClient({
-        chain: worldchain,
-        transport: custom(window.ethereum),
+      // Usamos el comando oficial de MiniKit para enviar la transacción
+      const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
+        transaction: [{
+          address: DWD_CONTRACT_ADDRESS,
+          abi: DWDABI.abi as any,
+          functionName: 'claim',
+          args: [],
+        }],
       });
 
-      const hash = await walletClient.writeContract({
-        address: DWD_CONTRACT_ADDRESS, abi: DWDABI.abi, functionName: 'claim', account: walletAddress as `0x${string}`,
-      });
-      setClaimSuccess("Transacción enviada, esperando confirmación...");
-      await publicClient.waitForTransactionReceipt({ hash });
-      setClaimSuccess("¡Tokens reclamados con éxito!");
-      await refreshClaimStatus(); // Actualizamos el temporizador desde la blockchain
+      if (finalPayload.status === 'success' && finalPayload.transaction_id) {
+        setClaimSuccess("Transacción enviada, esperando confirmación...");
+        // Usamos nuestro cliente viem para esperar a que la transacción sea confirmada
+        await publicClient.waitForTransactionReceipt({ hash: finalPayload.transaction_id });
+        setClaimSuccess("¡Tokens reclamados con éxito!");
+        await refreshClaimStatus(); // Actualizamos el temporizador desde la blockchain
+      } else {
+        throw new Error(finalPayload.error_code ?? 'La transacción falló en el MiniKit.');
+      }
     } catch (err) {
       console.error("Error al reclamar tokens:", err);
       setClaimError("La transacción falló o fue rechazada.");
