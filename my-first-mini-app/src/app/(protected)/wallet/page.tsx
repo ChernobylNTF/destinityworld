@@ -108,7 +108,7 @@ const WalletPage = () => {
             <div className="text-sm text-gray-400">Dirección Conectada</div>
             {walletAddress ? (
               <a
-                href={`https://testnet.worldscan.org/address/${walletAddress}`} // Enlace al explorador de Worldchain Sepolia
+                href={`https://sepolia.worldscan.org/address/${walletAddress}`} // Enlace al explorador de Worldchain Sepolia
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-mono text-base text-blue-400 break-words hover:underline"
