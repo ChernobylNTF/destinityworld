@@ -71,7 +71,7 @@ export const Verify = ({ onSuccess }: { onSuccess: () => void }) => {
             ? buttonState
             : undefined
         }
-        className="w-48"
+        className="w-full"
         >
         <Button
           onClick={() => onClickVerify(VerificationLevel.Device)}
