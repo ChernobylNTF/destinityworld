@@ -4,180 +4,173 @@ import Navigation from '../components/Navigation';
 import { Page } from '@/components/PageLayout';
 import { AuthButton } from '../components/AuthButton';
 import { Verify } from '../components/Verify';
-import { UserInfo } from '../components/UserInfo'; // Re-added import of UserInfo
-import { Button } from '@worldcoin/mini-apps-ui-kit-react'; // Removed TopBar import
-import { useState, useEffect } from 'react';
+import { UserInfo } from '../components/UserInfo';
+import { Button } from '@worldcoin/mini-apps-ui-kit-react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
-import { MiniKit } from '@worldcoin/minikit-js';
-import { getIsUserVerified } from "@worldcoin/minikit-js";
-// Importar el ABI del contrato DWD
-import DWDABI from '@/abi/DWD.json';
 
 // Importar el componente de la moneda 3D
 import SpinningCoin from '../components/SpinningCoin';
 
-// Dirección del contrato DWD
-const contractAddress = '0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0'; // Corrected contract address based on user\'s previous code
+// --- NUEVAS IMPORTACIONES PARA LA LÓGICA DE BLOCKCHAIN ---
+import { createPublicClient, createWalletClient, custom, http } from 'viem';
+import { worldchain } from 'viem/chains';
+import DWDABI from '@/abi/DWD.json';
 
-// CID de la moneda 3D en IPFS y nombre del archivo
-  const coinIpfsUrl = "https://gateway.pinata.cloud/ipfs/bafybeielalf3z7q7x7vngejt53qosizddaltox7laqngxjdqhf2vyn6egq";
+// --- Configuración ---
+const DWD_CONTRACT_ADDRESS = '0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0';
+const WORLDCHAIN_RPC_URL = 'https://worldchain-sepolia.g.alchemy.com/public';
+const coinIpfsUrl = "https://gateway.pinata.cloud/ipfs/bafybeielalf3z7q7x7vngejt53qosizddaltox7laqngxjdqhf2vyn6egq";
 
 export default function Home() {
   const { data: session, status } = useSession();
   const isAuthenticated = status === 'authenticated';
+  const walletAddress = session?.user?.walletAddress;
 
   const [isVerified, setIsVerified] = useState(false);
-  const [lastClaimTime, setLastClaimTime] = useState<number | null>(null);
-  const [timeLeft, setTimeLeft] = useState(0);
-  const [claiming, setClaiming] = useState(false);
 
-  // Cargar el último tiempo de reclamo del almacenamiento local al cargar la página
-  useEffect(() => {
-    const savedClaimTime = localStorage.getItem('lastClaimTime');
-    if (savedClaimTime) {
-      setLastClaimTime(parseInt(savedClaimTime, 10));
+  // --- ESTADOS REEMPLAZADOS: AHORA CONTROLADOS POR LA BLOCKCHAIN ---
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
+  const [claimSuccess, setClaimSuccess] = useState<string | null>(null);
+  const [nextClaimTimestamp, setNextClaimTimestamp] = useState<number | null>(null);
+  const [countdown, setCountdown] = useState('');
+
+  // Cliente público (para leer datos de la blockchain)
+  const publicClient = useMemo(() => createPublicClient({
+    chain: worldchain,
+    transport: http(WORLDCHAIN_RPC_URL),
+  }), []);
+
+  // Cliente de billetera (para firmar y enviar transacciones)
+  const walletClient = useMemo(() => {
+    if (typeof window !== 'undefined' && window.ethereum) {
+      return createWalletClient({ chain: worldchain, transport: custom(window.ethereum) });
     }
+    return null;
   }, []);
 
-  // Manejar el temporizador
-  useEffect(() => {
-    if (lastClaimTime) {
-      const interval = setInterval(() => {
-        const now = Date.now();
-        const elapsed = now - lastClaimTime;
-        const remaining = 24 * 60 * 60 * 1000 - elapsed;
-
-        if (remaining <= 0) {
-          setTimeLeft(0);
-          clearInterval(interval);
-        } else {
-          setTimeLeft(remaining);
-        }
-      }, 1000);
-      return () => clearInterval(interval);
-    } else {
-      setTimeLeft(0);
+  // Función para leer el estado del reclamo DESDE EL CONTRATO
+  const refreshClaimStatus = async () => {
+    if (!walletAddress) return;
+    try {
+      const lastClaim = await publicClient.readContract({
+        address: DWD_CONTRACT_ADDRESS, abi: DWDABI.abi, functionName: 'lastMint', args: [walletAddress as `0x${string}`],
+      });
+      // Leemos el tiempo de espera directamente del contrato
+      const claimFrequency = await publicClient.readContract({
+        address: DWD_CONTRACT_ADDRESS, abi: DWDABI.abi, functionName: 'CLAIM_FREQUENCY_SECONDS'
+      });
+      setNextClaimTimestamp(Number(lastClaim) + Number(claimFrequency));
+    } catch (err) {
+      console.error("Error al obtener estado de reclamo:", err);
     }
-  }, [lastClaimTime]);
+  };
+
+  // Se ejecuta cuando el usuario se autentica
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshClaimStatus();
+    }
+  }, [isAuthenticated, walletAddress]);
+
+  // Manejar el temporizador de cuenta regresiva
+  useEffect(() => {
+    if (!nextClaimTimestamp) return;
+    const interval = setInterval(() => {
+      const now = Math.floor(Date.now() / 1000);
+      const secondsLeft = nextClaimTimestamp - now;
+
+      if (secondsLeft > 0) {
+        const h = Math.floor(secondsLeft / 3600).toString().padStart(2, '0');
+        const m = Math.floor((secondsLeft % 3600) / 60).toString().padStart(2, '0');
+        const s = (secondsLeft % 60).toString().padStart(2, '0');
+        setCountdown(`${h}:${m}:${s}`);
+      } else {
+        setCountdown('');
+        setNextClaimTimestamp(null); // Permite reclamar
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [nextClaimTimestamp]);
 
   const handleVerificationSuccess = () => {
     setIsVerified(true);
   };
 
+  // --- FUNCIÓN DE RECLAMO ACTUALIZADA ---
   const handleClaimTokens = async () => {
-    if (!isAuthenticated || !isVerified || claiming || timeLeft > 0) {
-      return;
-    }
+    if (!walletClient || !walletAddress || !canClaim || isClaiming) return;
 
-    setClaiming(true);
+    setIsClaiming(true);
+    setClaimError(null);
+    setClaimSuccess(null);
+
     try {
-      // Usar MiniKit.commandsAsync.sendTransaction para enviar la transacción
-      const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
-        transaction: [
-          {
-            address: contractAddress,
-            abi: DWDABI.abi as any, // Usar el ABI del contrato DWD
-            functionName: 'claim', // Llamar a la función \'claim\'
-            args: [], // Asumiendo que la función claim no requiere argumentos
-          },
-        ],
+      const hash = await walletClient.writeContract({
+        address: DWD_CONTRACT_ADDRESS, abi: DWDABI.abi, functionName: 'claim', account: walletAddress as `0x${string}`,
       });
-
-      if (finalPayload.status === 'success') {
-        console.log(
-          'Transaction submitted, waiting for confirmation:',
-          finalPayload.transaction_id,
-        );
-        // Opcional: puedes guardar finalPayload.transaction_id para esperar la confirmación
-
-        const now = Date.now();
-        setLastClaimTime(now);
-        localStorage.setItem('lastClaimTime', now.toString());
-        alert('Tokens reclamados con éxito. Espera 24 horas para el próximo reclamo.');
-      } else {
-        console.error('Transaction submission failed:', finalPayload);
-        alert('Error al reclamar tokens. Consulta la consola para más detalles.');
-      }
-
-    } catch (error) {
-      console.error('Error al reclamar tokens:', error);
-      alert('Error al reclamar tokens. Consulta la consola para más detalles.');
+      setClaimSuccess("Transacción enviada, esperando confirmación...");
+      await publicClient.waitForTransactionReceipt({ hash });
+      setClaimSuccess("¡Tokens reclamados con éxito!");
+      await refreshClaimStatus(); // Volvemos a leer el estado para actualizar el temporizador
+    } catch (err) {
+      console.error("Error al reclamar tokens:", err);
+      setClaimError("La transacción falló o fue rechazada.");
     } finally {
-      setClaiming(false);
+      setIsClaiming(false);
+      // Limpiamos los mensajes después de 5 segundos
+      setTimeout(() => { setClaimSuccess(null); setClaimError(null); }, 5000);
     }
   };
-
-  // Formatear el tiempo restante en HH:MM:SS
-  const formatTime = (ms: number) => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
+  
+  const canClaim = !nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000);
 
   return (
     <Page>
-      {/* Page.Header now contains the UserInfo component with the dark gradient background */}
-      <Page.Header className="p-0 bg-gradient-to-br from-gray-900 to-blue-900 text-white"> {/* Added dark gradient and text-white */}
-        <UserInfo /> {/* UserInfo component placed in the header */}
+      <Page.Header className="p-0 bg-gradient-to-br from-gray-900 to-blue-900 text-white">
+        <UserInfo />
       </Page.Header>
 
-      {/* Cambiado className de Page.Main a justify-center y eliminado gap-4 */}
       <Page.Main className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white min-h-screen">
-
-        {/* Contenedor para los elementos inferiores (centrados) - Añadido flex, flex-col, items-center y gap-4 */}
         <div className="flex flex-col items-center gap-4">
-          <p class="text-5xl font-black text-yellow-600 yellow:text-white">DESTINITY</p>
-
-          {/* Componente de la moneda 3D de IPFS */}
+          <p className="text-5xl font-black text-yellow-600 yellow:text-white">DESTINITY</p>
           <SpinningCoin ipfsUrl={coinIpfsUrl} />
 
-          {!isAuthenticated && (
-            <div className="w-full max-w-sm">
-              <AuthButton />
+          {!isAuthenticated && <div className="w-full max-w-sm"><AuthButton /></div>}
+          {isAuthenticated && !isVerified && <div className="w-full max-w-sm"><Verify onSuccess={handleVerificationSuccess} /></div>}
+
+          {/* --- LÓGICA DE VISTA ACTUALIZADA --- */}
+          {isAuthenticated && isVerified && (
+            <div className="w-full max-w-sm text-center mt-4">
+              {canClaim ? (
+                <Button onClick={handleClaimTokens} disabled={isClaiming} size="lg" variant="primary" className="w-full">
+                  {isClaiming ? 'Reclamando...' : 'Reclamar Tokens'}
+                </Button>
+              ) : (
+                <div>
+                  <p>Próximo reclamo en:</p>
+                  <p className="text-xl font-bold">{countdown || 'Calculando...'}</p>
+                </div>
+              )}
+              {/* Contenedor para mensajes de estado */}
+              <div className="h-6 mt-2 text-sm">
+                {claimSuccess && <p className="text-green-400">{claimSuccess}</p>}
+                {claimError && <p className="text-red-400">{claimError}</p>}
+              </div>
             </div>
           )}
-
-          {isAuthenticated && !isVerified && (
-            <div className="w-full max-w-sm">
-              <Verify onSuccess={handleVerificationSuccess} />
-            </div>
-          )}
-
-          {isAuthenticated && isVerified && ( timeLeft <= 0 ? (
-            <div className="w-full max-w-sm">
-              <Button
-                onClick={handleClaimTokens}
-                disabled={claiming || timeLeft > 0}
-                size="lg"
-                variant="primary"
-                className="w-full"
-              >
-                {claiming ? 'Reclamando...' : 'Reclamar Tokens'}
-              </Button>
-            </div>
-          ) : (
-             <div className="w-full max-w-sm text-center">
-               <p>Próximo reclamo en:</p>
-               <p className="text-xl font-bold">{formatTime(timeLeft)}</p>
-             </div>
-          ))}
         </div>
-
-        {/* Este comentario u otros elementos fuera del nuevo div contenedor quedarían entre los dos grupos. */}
-          
       </Page.Main>
 
       <Page.Footer className="px-0 fixed bottom-0 w-full bg-white z-50">
-    <Navigation />
-  </Page.Footer>
+        <Navigation />
+      </Page.Footer>
     </Page>
   );
 }
 
-// Añadir un tipo para la propiedad onSuccess en el componente Verify
+// Declaración de módulo para Verify (sin cambios)
 declare module '../components/Verify' {
   export const Verify: ({ onSuccess }: { onSuccess: () => void }) => JSX.Element;
 }
