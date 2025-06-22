@@ -78,7 +78,7 @@ export const Verify = ({ onSuccess }: { onSuccess: () => void }) => {
           disabled={buttonState === 'pending'}
           size="lg"
           variant="tertiary"
-          className="w-full"
+          className="w-1/3"
           >
           ⚠️ Verificación
            </Button>
