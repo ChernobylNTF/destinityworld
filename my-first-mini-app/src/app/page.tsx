@@ -130,6 +130,7 @@ export default function Home() {
         {/* Contenedor para los elementos inferiores (centrados) - Añadido flex, flex-col, items-center y gap-4 */}
         <div className="flex flex-col items-center gap-4">
           <p className="text-4x1 font-semibold">Destinity</p>
+          <p class="text-4xl text-gray-900 dark:text-white">Aa</p>
 
           {/* Componente de la moneda 3D de IPFS */}
           <SpinningCoin ipfsUrl={coinIpfsUrl} />
