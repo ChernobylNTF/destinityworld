@@ -8,7 +8,7 @@ import { UserInfo } from '../components/UserInfo';
 import { Button } from '@worldcoin/mini-apps-ui-kit-react';
 import { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
-import Link from 'next/link'; // Importamos Link para el enlace al explorador
+import Link from 'next/link';
 
 // Importar el componente de la moneda 3D
 import SpinningCoin from '../components/SpinningCoin';
@@ -43,7 +43,6 @@ export default function Home() {
     chain: worldchain, transport: http(WORLDCHAIN_RPC_URL),
   }), []);
 
-  // --- HOOK OFICIAL DEL SDK ---
   const {
     data: receipt,
     isLoading: isConfirming,
@@ -55,7 +54,6 @@ export default function Home() {
     transactionId: transactionId,
   });
 
-  // Función para leer el estado del reclamo del contrato
   const refreshClaimStatus = async () => {
     if (!walletAddress) return;
     try {
@@ -67,7 +65,6 @@ export default function Home() {
     } catch (err) { console.error("Error al obtener estado de reclamo:", err); }
   };
 
-  // Chequeo inicial de estado
   useEffect(() => {
     const checkStatus = async () => {
       if (isAuthenticated && walletAddress) {
@@ -81,18 +78,16 @@ export default function Home() {
     checkStatus();
   }, [isAuthenticated, walletAddress]);
 
-  // --- useEffect QUE REACCIONA AL ESTADO DE LA TRANSACCIÓN ---
   useEffect(() => {
     if (transactionId && isConfirming) {
       setClaimStatus('confirming');
     } else if (transactionId && isConfirmed && receipt) {
       setClaimStatus('success');
-      setOnChainTxHash(receipt.transactionHash); // Guardamos el HASH REAL
-      // --- SOLUCIÓN: Pequeña pausa para dar tiempo al nodo RPC ---
+      setOnChainTxHash(receipt.transactionHash);
       setTimeout(() => {
-        refreshClaimStatus(); // Refrescamos el temporizador
-      }, 2000); // 2 segundos de espera
-      setTimeout(() => { setClaimStatus('idle'); setTransactionId(''); }, 8000); // Limpiamos estado después de 8s
+        refreshClaimStatus();
+      }, 2000);
+      setTimeout(() => { setClaimStatus('idle'); setTransactionId(''); }, 8000);
     } else if (transactionId && isError) {
       setClaimStatus('error');
       setClaimError('La transacción falló en la red.');
@@ -100,7 +95,6 @@ export default function Home() {
     }
   }, [isConfirming, isConfirmed, isError, receipt, transactionId]);
 
-  // Manejo del temporizador
   useEffect(() => {
     if (!nextClaimTimestamp) return;
     const interval = setInterval(() => {
@@ -121,7 +115,7 @@ export default function Home() {
   
   const handleVerificationSuccess = () => setIsVerified(true);
 
-  // --- FUNCIÓN DE RECLAMO ---
+  // --- FUNCIÓN DE RECLAMO CORREGIDA CON Permit2 ---
   const handleClaimTokens = async () => {
     const canClaim = !nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000);
     if (!canClaim || claimStatus !== 'idle') return;
@@ -131,17 +125,36 @@ export default function Home() {
     setOnChainTxHash('');
 
     try {
+      // Objeto de permiso para Permit2
+      const permit = {
+        permitted: {
+          token: DWD_CONTRACT_ADDRESS,
+          amount: (1 * 10 ** 18).toString(), // Cantidad a permitir, debe ser >= que la cantidad a reclamar
+        },
+        spender: DWD_CONTRACT_ADDRESS, // El "gastador" es nuestro propio contrato
+        nonce: Date.now().toString(),
+        deadline: Math.floor((Date.now() + 30 * 60 * 1000) / 1000).toString(), // Válido por 30 mins
+      };
+
       const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
-        transaction: [{ address: DWD_CONTRACT_ADDRESS, abi: DWDABI.abi as any, functionName: 'claim', args: [] }],
+        transaction: [{ 
+          address: DWD_CONTRACT_ADDRESS, 
+          abi: DWDABI.abi as any, 
+          functionName: 'claim', 
+          args: [] 
+        }],
+        // Adjuntamos el permiso requerido
+        permit2: [permit],
       });
+
       if (finalPayload.status === 'success' && finalPayload.transaction_id) {
-        setTransactionId(finalPayload.transaction_id); // El hook se encargará del resto
+        setTransactionId(finalPayload.transaction_id);
       } else {
         throw new Error(finalPayload.error_code ?? 'Transacción rechazada en MiniKit.');
       }
     } catch (err: any) {
       console.error("Error al iniciar el reclamo:", err);
-      setClaimError(err.message);
+      setClaimError(err.message || "La transacción fue rechazada.");
       setClaimStatus('idle');
     }
   };
