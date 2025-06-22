@@ -42,8 +42,6 @@ const InfoPage = () => {
             {/* Puedes añadir más información aquí */}
               <div className="grid w-full gap-4">
                 <a href="https://t.me/+Q6FBHtiGMdU1N2Zh" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">Telegram</a>
-                
-          </div>
         </div>
       </Page.Main>
     </>
