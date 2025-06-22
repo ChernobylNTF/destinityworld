@@ -42,7 +42,7 @@ export default function RankingPage() {
       <Page.Header className="p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white">
         <UserInfo />
       </Page.Header>
-      <Page.Main className="p-4 md:p-6 bg-gray-900 text-white">
+      <Page.Main className="p-6 bg-gradient-to-br from-gray-900 to-blue-900 text-white min-h-screen">
         <div className="w-full max-w-2xl mx-auto">
           <h1 className="text-3xl font-bold mb-6 text-center text-yellow-400">
             🏆 Ranking de Rachas 🏆
