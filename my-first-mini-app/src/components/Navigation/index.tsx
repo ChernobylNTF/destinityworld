@@ -19,6 +19,9 @@ const Navigation = () => {
           <Link href="/perfil">Perfil</Link>
         </li>
         <li>
+          <Link href="/ranking">Ranking</Link>
+        </li>
+        <li>
           <Link href="/info">Info</Link> {/* Cambiamos el texto y la ruta a /info */}
         </li>
       </ul>
