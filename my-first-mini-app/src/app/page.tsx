@@ -128,8 +128,8 @@ export default function Home() {
       <Page.Main className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white min-h-screen">
 
         {/* Contenedor para los elementos inferiores (centrados) - Añadido flex, flex-col, items-center y gap-4 */}
-        <div className="flex flex-col items-center gap-20">
-          <p className="text-lg font-semibold">Destinity</p>
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-4x1 font-semibold">Destinity</p>
 
           {/* Componente de la moneda 3D de IPFS */}
           <SpinningCoin ipfsUrl={coinIpfsUrl} />
