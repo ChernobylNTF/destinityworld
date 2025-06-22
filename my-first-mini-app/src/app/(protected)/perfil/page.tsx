@@ -62,7 +62,7 @@ export default function ProfilePage() {
       <Page.Header className="p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white">
         <UserInfo />
       </Page.Header>
-      <Page.Main className="flex flex-col items-center justify-start p-6 bg-gray-900 text-white min-h-screen">
+      <Page.Main className="p-6 bg-gradient-to-br from-gray-900 to-blue-900 text-white min-h-screen">
         <div className="w-full max-w-md">
           <h1 className="text-3xl font-bold mb-6 text-center">Tu Perfil</h1>
           
