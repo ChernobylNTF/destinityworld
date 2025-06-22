@@ -58,7 +58,7 @@ export const Verify = ({ onSuccess }: { onSuccess: () => void }) => {
   };
 
   return (
-    <div className="grid w-full gap-4">
+    <div className="grid w-24 gap-4">
       <p className="text-lg font-semibold"></p>
       <LiveFeedback
         label={{
@@ -71,14 +71,14 @@ export const Verify = ({ onSuccess }: { onSuccess: () => void }) => {
             ? buttonState
             : undefined
         }
-        className="w-full"
+        className="w-24"
         >
         <Button
           onClick={() => onClickVerify(VerificationLevel.Device)}
           disabled={buttonState === 'pending'}
           size="lg"
           variant="tertiary"
-          className="w-1/3"
+          className="w-24"
           >
           ⚠️ Verificación
            </Button>
