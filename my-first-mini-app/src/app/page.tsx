@@ -38,6 +38,7 @@ export default function Home() {
   const [countdown, setCountdown] = useState('');
   const [transactionId, setTransactionId] = useState<string>('');
   const [onChainTxHash, setOnChainTxHash] = useState<string>('');
+  const [isClaimStatusLoading, setIsClaimStatusLoading] = useState(true);
 
   const publicClient = useMemo(() => createPublicClient({
     chain: worldchain, transport: http(WORLDCHAIN_RPC_URL),
@@ -56,6 +57,7 @@ export default function Home() {
 
   const refreshClaimStatus = async () => {
     if (!walletAddress) return;
+    setIsClaimStatusLoading(true);
     try {
       const [lastClaim, claimFrequency] = await Promise.all([
         publicClient.readContract({ address: DWD_CONTRACT_ADDRESS, abi: DWDABI.abi, functionName: 'lastMint', args: [walletAddress as `0x${string}`] }),
@@ -63,6 +65,7 @@ export default function Home() {
       ]);
       setNextClaimTimestamp(Number(lastClaim) + Number(claimFrequency));
     } catch (err) { console.error("Error al obtener estado de reclamo:", err); }
+    finally { setIsClaimStatusLoading(false); }
   };
 
   useEffect(() => {
@@ -84,9 +87,7 @@ export default function Home() {
     } else if (transactionId && isConfirmed && receipt) {
       setClaimStatus('success');
       setOnChainTxHash(receipt.transactionHash);
-      setTimeout(() => {
-        refreshClaimStatus();
-      }, 2000);
+      setTimeout(() => { refreshClaimStatus(); }, 2000);
       setTimeout(() => { setClaimStatus('idle'); setTransactionId(''); }, 8000);
     } else if (transactionId && isError) {
       setClaimStatus('error');
@@ -115,9 +116,8 @@ export default function Home() {
   
   const handleVerificationSuccess = () => setIsVerified(true);
 
-  // --- FUNCIÓN DE RECLAMO CORREGIDA CON Permit2 ---
   const handleClaimTokens = async () => {
-    const canClaim = !nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000);
+    const canClaim = !isClaimStatusLoading && (!nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000));
     if (!canClaim || claimStatus !== 'idle') return;
 
     setClaimStatus('sending');
@@ -125,29 +125,18 @@ export default function Home() {
     setOnChainTxHash('');
 
     try {
-      // Objeto de permiso para Permit2
       const permit = {
-        permitted: {
-          token: DWD_CONTRACT_ADDRESS,
-          amount: (1 * 10 ** 18).toString(), // Cantidad a permitir, debe ser >= que la cantidad a reclamar
-        },
-        spender: DWD_CONTRACT_ADDRESS, // El "gastador" es nuestro propio contrato
+        permitted: { token: DWD_CONTRACT_ADDRESS, amount: (1 * 10 ** 18).toString() },
+        spender: DWD_CONTRACT_ADDRESS,
         nonce: Date.now().toString(),
-        deadline: Math.floor((Date.now() + 30 * 60 * 1000) / 1000).toString(), // Válido por 30 mins
+        deadline: Math.floor((Date.now() + 30 * 60 * 1000) / 1000).toString(),
       };
-
-      // ... dentro de la función handleClaimTokens
 
       const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
         transaction: [{ address: DWD_CONTRACT_ADDRESS, abi: DWDABI.abi as any, functionName: 'claim', args: [] }],
         permit2: [permit],
-        
-        // --- AQUÍ ESTÁ LA SOLUCIÓN ---
-        // Le decimos al MiniKit que no formatee el payload.
-        formatPayload: false, 
+        formatPayload: false, // <-- La solución clave que encontraste
       });
-
-// ...
 
       if (finalPayload.status === 'success' && finalPayload.transaction_id) {
         setTransactionId(finalPayload.transaction_id);
@@ -161,13 +150,17 @@ export default function Home() {
     }
   };
   
-  const canClaim = !nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000);
+  const canClaim = !isClaimStatusLoading && (!nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000));
 
-  const getButtonText = () => {
-    switch (claimStatus) {
-      case 'sending': return 'Enviando...';
-      case 'confirming': return 'Confirmando...';
-      default: return 'Reclamar Tokens';
+  const renderClaimSection = () => {
+    if (isClaimStatusLoading) {
+      return <div><p>Verificando estado del reclamo...</p></div>;
+    }
+    if (canClaim) {
+      const buttonText = claimStatus === 'sending' ? 'Enviando...' : claimStatus === 'confirming' ? 'Confirmando...' : 'Reclamar Tokens';
+      return <Button onClick={handleClaimTokens} disabled={claimStatus !== 'idle'} size="lg" variant="primary" className="w-full">{buttonText}</Button>;
+    } else {
+      return <div><p>Próximo reclamo en:</p><p className="text-xl font-bold">{countdown || '...'}</p></div>;
     }
   };
 
@@ -182,16 +175,7 @@ export default function Home() {
           {isAuthenticated && !isVerified && <div className="w-full max-w-sm"><Verify onSuccess={handleVerificationSuccess} /></div>}
           {isAuthenticated && isVerified && (
             <div className="w-full max-w-sm text-center mt-4">
-              {canClaim ? (
-                <Button onClick={handleClaimTokens} disabled={claimStatus !== 'idle'} size="lg" variant="primary" className="w-full">
-                  {getButtonText()}
-                </Button>
-              ) : (
-                <div>
-                  <p>Próximo reclamo en:</p>
-                  <p className="text-xl font-bold">{countdown || 'Calculando...'}</p>
-                </div>
-              )}
+              {renderClaimSection()}
               <div className="h-10 mt-2 text-sm flex flex-col items-center justify-center">
                 {claimStatus === 'error' && <p className="text-red-400">{claimError}</p>}
                 {claimStatus === 'success' && (
@@ -216,4 +200,4 @@ export default function Home() {
 
 declare module '../components/Verify' {
   export const Verify: ({ onSuccess }: { onSuccess: () => void }) => JSX.Element;
-}
+    }
