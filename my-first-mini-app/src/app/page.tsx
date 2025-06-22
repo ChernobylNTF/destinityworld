@@ -60,16 +60,23 @@ export default function Home() {
   // Chequeo automático de verificación y estado de reclamo
   useEffect(() => {
     const checkStatus = async () => {
-      if (isAuthenticated) {
-        try {
-          const verificationStatus = await getIsUserVerified();
-          if (verificationStatus.isVerified) {
-            setIsVerified(true);
-          }
-        } catch (e) { console.warn("No se pudo comprobar la verificación:", e); }
-        await refreshClaimStatus();
+      // Condición de guarda principal: No hacer NADA hasta tener la sesión y la dirección.
+      if (!isAuthenticated || !walletAddress) {
+        return;
       }
+      
+      // Si llegamos aquí, es seguro proceder.
+      try {
+        const verificationStatus = await getIsUserVerified();
+        if (verificationStatus.isVerified) {
+          setIsVerified(true);
+        }
+      } catch (e) { console.warn("No se pudo comprobar la verificación:", e); }
+      
+      // Ahora es seguro llamar a esta función.
+      await refreshClaimStatus();
     };
+
     checkStatus();
   }, [isAuthenticated, walletAddress]);
 
@@ -96,7 +103,7 @@ export default function Home() {
     setIsVerified(true);
   };
 
-  // --- FUNCIÓN DE RECLAMO CON MiniKit ---
+  // --- FUNCIÓN DE RECLAMO CON MiniKit (la más confiable) ---
   const handleClaimTokens = async () => {
     const canClaim = !nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000);
     if (!canClaim || isClaiming) return;
@@ -181,4 +188,4 @@ export default function Home() {
 // Declaración de módulo para Verify
 declare module '../components/Verify' {
   export const Verify: ({ onSuccess }: { onSuccess: () => void }) => JSX.Element;
-}
+      }
