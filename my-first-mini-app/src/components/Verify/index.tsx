@@ -28,7 +28,7 @@ export const Verify = ({ onSuccess }: { onSuccess: () => void }) => {
     setWhichVerification(verificationLevel);
     const result = await MiniKit.commandsAsync.verify({
       action: 'testing-action', // Make sure to create this in the developer portal -> incognito actions
-      verification_level: verificationLevel,
+      verification_level: verificationLevel.Orb,
     });
     console.log(result.finalPayload);
     // Verify the proof
