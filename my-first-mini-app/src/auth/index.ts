@@ -8,20 +8,27 @@ import NextAuth, { type DefaultSession } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 
 // Declaramos los tipos para incluir los nuevos campos
-declare module 'next-auth' {
-  interface User {
-    walletAddress: string;
-    username: string;
-    profilePictureUrl: string;
-    streak: number; 
+  export type User = {
+	walletAddress?: string
+	username?: string
+	profilePictureUrl?: string
+	permissions?: {
+		notifications: boolean
+		contacts: boolean
+	}
+	optedIntoOptionalAnalytics?: boolean
+	worldAppVersion?: number
+	deviceOS?: string
+  streak?: number
   }
+  
 
   interface Session {
     user: {
-      walletAddress: string;
-      username: string;
-      profilePictureUrl: string;
-      streak: number; 
+      walletAddress?: string;
+      username?: string;
+      profilePictureUrl?: string;
+      streak?: number; 
     } & DefaultSession['user'];
   }
 }
