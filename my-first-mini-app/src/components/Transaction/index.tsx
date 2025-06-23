@@ -1,6 +1,6 @@
 'use client';
 
-import DWDABI from '@/abi/DWD.json';
+import DWDABI from '@/abi/TestContract.json';
 import { Button, LiveFeedback } from '@worldcoin/mini-apps-ui-kit-react';
 import { MiniKit } from '@worldcoin/minikit-js';
 import { useWaitForTransactionReceipt } from '@worldcoin/minikit-react';
@@ -18,7 +18,7 @@ import { worldchain } from 'viem/chains';
  * 3. Wait in a useEffect for the transaction to complete
  */
 export const Transaction = () => {
-  // See the code for this contract here: https://worldscan.org/address/0x7961D1aAF97891b1617E8F7fdDf9bEEB68a165E9#code
+  // See the code for this contract here: https://worldscan.org/address/0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0#code
   const myContractToken = '0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0';
   const [buttonState, setButtonState] = useState<
     'pending' | 'success' | 'failed' | undefined
@@ -44,7 +44,7 @@ export const Transaction = () => {
   } = useWaitForTransactionReceipt({
     client: client,
     appConfig: {
-      app_id: process.env.NEXT_PUBLIC_APP_ID as `app_${string}`,
+      app_id: process.env.WLD_CLIENT_ID as `app_${string}`,
     },
     transactionId: transactionId,
   });
@@ -59,7 +59,7 @@ export const Transaction = () => {
         }, 3000);
       } else if (isError) {
         console.error('Transaction failed:', error);
-        setButtonState('success'); // Keeping this as 'success' seems intentional in the original code for visual feedback despite failure.
+        setButtonState('failed');
         setTimeout(() => {
           setButtonState(undefined);
         }, 3000);
@@ -69,33 +69,28 @@ export const Transaction = () => {
 
   // This is a basic transaction call to mint a token
   const onClickGetToken = async () => {
-   // setTransactionId('success'); // Comentado como sugerido anteriormente
+    setTransactionId('');
     setWhichButton('getToken');
     setButtonState('pending');
 
     try {
-      const transactionConfig = {
+      const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
         transaction: [
           {
-            address: '0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0', // Dirección de tu contrato DestinityWorldTokenClaim
-            abi: DWDABI.abi, // ABI de tu contrato
-            functionName: 'claim', // ¡Función correcta para reclamar tokens!
-            args: [], // ¡Sin argumentos para esta función!
+            address: myContractToken,
+            abi: DWDABI,
+            functionName: 'mintToken',
+            args: [],
           },
         ],
-        // No incluyas el campo 'permit2' si no lo vas a usar
-      };
-
-      console.log('Sending transaction with config:', transactionConfig);
-
-      const { finalPayload } = await MiniKit.commandsAsync.sendTransaction(transactionConfig);
+      });
 
       if (finalPayload.status === 'success') {
         console.log(
           'Transaction submitted, waiting for confirmation:',
           finalPayload.transaction_id,
         );
-        setTransactionId(finalPayload.transaction_id); // Establece el ID real para el polling
+        setTransactionId(finalPayload.transaction_id);
       } else {
         console.error('Transaction submission failed:', finalPayload);
         setButtonState('failed');
@@ -114,9 +109,8 @@ export const Transaction = () => {
 
   // This is a basic transaction call to use Permit2 to spend the token you minted
   // Make sure to call Mint Token first
-  
   const onClickUsePermit2 = async () => {
-  //  setTransactionId('success');
+    setTransactionId('');
     setWhichButton('usePermit2');
     setButtonState('pending');
     const address = (await MiniKit.getUserByUsername('alex')).walletAddress;
@@ -125,7 +119,7 @@ export const Transaction = () => {
     const permitTransfer = {
       permitted: {
         token: myContractToken,
-        amount: (1 * 10 ** 18).toString(),
+        amount: (0.5 * 10 ** 18).toString(),
       },
       nonce: Date.now().toString(),
       deadline: Math.floor((Date.now() + 30 * 60 * 1000) / 1000).toString(),
@@ -133,15 +127,15 @@ export const Transaction = () => {
 
     const transferDetails = {
       to: address,
-      requestedAmount: (1 * 10 ** 18).toString(),
+      requestedAmount: (0.5 * 10 ** 18).toString(),
     };
 
     try {
       const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
         transaction: [
           {
-            address: 0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0,
-            abi: DWDABI.abi,
+            address: myContractToken,
+            abi: TestContractABI,
             functionName: 'signatureTransfer',
             args: [
               [
@@ -181,7 +175,6 @@ export const Transaction = () => {
     }
   };
 
-
   return (
     <div className="grid w-full gap-4">
       <p className="text-lg font-semibold">Transaction</p>
@@ -204,8 +197,6 @@ export const Transaction = () => {
           Get Token
         </Button>
       </LiveFeedback>
-      {/* LiveFeedback and Button for Use Permit2 commented out */}
-      {/*
       <LiveFeedback
         label={{
           failed: 'Transaction failed',
@@ -225,7 +216,6 @@ export const Transaction = () => {
           Use Permit2
         </Button>
       </LiveFeedback>
-      */}
     </div>
   );
 };
