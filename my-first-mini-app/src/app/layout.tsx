@@ -30,12 +30,12 @@ export default async function RootLayout({
   const session = await auth();
   return (
     <html lang="en">
-            <body className={`${geistSans.variable} ${geistMono.variable} `>
-	       <SpeedInsights>
-                 <ClientProviders session={session}>{children}</ClientProviders>
-                 <MiniKitProvider>{children}</MiniKitProvider>
-	        </SpeedInsights>
-            </body>
+      <body className={`${geistSans.variable} ${geistMono.variable} `}>
+        <MiniKitProvider> {/* Envuelve el contenido con MiniKitProvider */}
+          <ClientProviders session={session}>{children}</ClientProviders>
+          <SpeedInsights />
+        </MiniKitProvider>
+      </body>
     </html>
   );
 }
