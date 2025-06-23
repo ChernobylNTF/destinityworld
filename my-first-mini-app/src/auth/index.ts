@@ -31,7 +31,6 @@ import Credentials from 'next-auth/providers/credentials';
       streak?: number; 
     } & DefaultSession['user'];
   }
-}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
