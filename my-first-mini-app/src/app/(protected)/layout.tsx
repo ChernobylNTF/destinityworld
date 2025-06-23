@@ -1,3 +1,5 @@
+"use client"; // Agrega esta línea al inicio del archivo
+
 import { auth } from '@/auth';
 import Navigation from '@/components/Navigation';
 import { Page } from '@/components/PageLayout';
@@ -11,20 +13,17 @@ export default function TabsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = auth(); // No necesitas el await aquí si auth() ya devuelve la sesión directamente
+  const session = auth();
 
   useEffect(() => {
     const obtenerPermisos = async () => {
       try {
         const payload = await MiniKit.commandsAsync.getPermissions();
         console.log("Permisos obtenidos:", payload.permissions);
-        // Aquí puedes verificar si tienes los permisos necesarios para las funcionalidades de esta sección
         const tieneNotificaciones = payload.permissions.some(permiso => permiso === Permission.Notifications);
         const tieneMicrofono = payload.permissions.some(permiso => permiso === Permission.Microphone);
-        // ... realiza las verificaciones necesarias y actualiza el estado o la interfaz de usuario según los permisos
         if (!tieneNotificaciones) {
           console.warn("Permiso de notificaciones no concedido.");
-          // Podrías mostrar un mensaje al usuario o solicitar el permiso si es necesario
         }
         if (!tieneMicrofono) {
           console.warn("Permiso de micrófono no concedido.");
@@ -35,9 +34,8 @@ export default function TabsLayout({
     };
 
     obtenerPermisos();
-  }, []); // Se ejecuta solo una vez al montar el componente
+  }, []);
 
-  // If the user is not authenticated, redirect to the login page
   if (!session) {
     console.log('Not authenticated, redirecting...');
     redirect('/');
@@ -46,9 +44,7 @@ export default function TabsLayout({
   return (
     <SessionProvider session={session}>
       <Page className="bg-gradient-to-br from-gray-900 to-blue-900 text-white">
-        {/* Aquí van los children (las páginas como Home, Wallet, Info) */}
         {children}
-        {/* La navegación va en el footer */}
         <Page.Footer className="px-0 fixed bottom-0 w-full bg-white z-50">
           <Navigation />
         </Page.Footer>
