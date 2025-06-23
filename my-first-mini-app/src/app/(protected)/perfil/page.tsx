@@ -36,7 +36,7 @@ export default function ProfilePage() {
     formData.append('profilePicture', file);
 
     try {
-      const response = await fetch('/api/upload-profile', {
+      const response = await fetch('/api/avatar/upload', {
         method: 'POST',
         body: formData,
       });
