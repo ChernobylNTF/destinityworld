@@ -19,8 +19,10 @@ export async function POST(request: Request): Promise<NextResponse> {
 }
 
 // The next lines are required for Pages API Routes only
-// export const config = {
-//   api: {
-//     bodyParser: false,
-//   },
-// };
+ export const config = {
+   api: {
+     bodyParser: (
+       sizeLimit: '4mb',
+       )
+   },
+ };
