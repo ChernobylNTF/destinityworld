@@ -1,11 +1,10 @@
+import { MiniKitProvider } from '@worldcoin/minikit-js/minikit-provider'; 
 import { auth } from '@/auth';
 import ClientProviders from '@/providers';
-import '@worldcoin/mini-apps-ui-kit-react/styles.css';
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
-import './globals.css';
-import { SpeedInsights } from "@vercel/speed-insights/next"
-import { MiniKitProvider } from '@worldcoin/minikit-js/minikit-provider'; // Importa MiniKitProvider
+import { SpeedInsights } from "@vercel/speed-insights/next";
+// Importa MiniKitProvider
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -22,19 +21,20 @@ export const metadata: Metadata = {
   description: 'DWD',
 };
 
-export default async function RootLayout({
-  children,
+export default async function Root({
+	children,
 }: Readonly<{
-  children: React.ReactNode;
+	children: React.ReactNode
 }>) {
-  const session = await auth();
-  return (
+	return (
     <html lang="en">
+        <MiniKitProvider>
+      <body className={inter.className}>{children}
       <body className={`${geistSans.variable} ${geistMono.variable} `}>
         <MiniKitProvider> {/* Envuelve el contenido con MiniKitProvider */}
           <ClientProviders session={session}>{children}</ClientProviders>
           <SpeedInsights />
-        </MiniKitProvider>
+      </body>
       </body>
     </html>
   );
