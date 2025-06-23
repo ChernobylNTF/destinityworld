@@ -1,36 +1,39 @@
-import { MiniKitProvider } from '@worldcoin/minikit-js/minikit-provider'; 
 import { auth } from '@/auth';
 import ClientProviders from '@/providers';
+import { SessionProvider } from "@/providers/session-provider";
+import '@worldcoin/mini-apps-ui-kit-react/styles.css';
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
-import { SpeedInsights } from "@vercel/speed-insights/next";
-// Importa MiniKitProvider
+import { Inter } from "next/font/google";
+import './globals.css';
+import { SpeedInsights } from "@vercel/speed-insights/next"
+import { MiniKitProvider } from '@worldcoin/minikit-js/minikit-provider'; // Importa MiniKitProvider
+import { ErudaProvider } from "@/providers/eruda-provider";
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: 'Destinity World',
   description: 'DWD',
 };
 
-export default async function Root({
-	children,
+export default async function RootLayout({
+  children,
 }: Readonly<{
-	children: React.ReactNode
+  children: React.ReactNode;
 }>) {
-	return (
-		<html lang="en">
-			<MiniKitProvider>
-				<body className={inter.className}>{children}</body>
-			</MiniKitProvider>
-		</html>
-		)
+  const session = await auth();
+  return (
+    <html lang="en">
+            <body className={inter.className}>
+             <ErudaProvider>
+               <SessionProvider>
+	       <SpeedInsights>
+                 <ClientProviders session={session}>{children}</ClientProviders>
+                 <MiniKitProvider>{children}</MiniKitProvider>
+	        </SpeedInsights>
+	       </SessionProvider>
+            </ErudaProvider>
+            </body>
+    </html>
+  );
 }
