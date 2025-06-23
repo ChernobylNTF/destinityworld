@@ -5,6 +5,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { MiniKitProvider } from '@worldcoin/minikit-js/minikit-provider'; // Importa MiniKitProvider
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -30,8 +31,10 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} `}>
-        <ClientProviders session={session}>{children}</ClientProviders>
-        <SpeedInsights />
+        <MiniKitProvider> {/* Envuelve el contenido con MiniKitProvider */}
+          <ClientProviders session={session}>{children}</ClientProviders>
+          <SpeedInsights />
+        </MiniKitProvider>
       </body>
     </html>
   );
