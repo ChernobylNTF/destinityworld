@@ -114,7 +114,7 @@ export const Transaction = () => {
 
   // This is a basic transaction call to use Permit2 to spend the token you minted
   // Make sure to call Mint Token first
-  /*
+  
   const onClickUsePermit2 = async () => {
   //  setTransactionId('success');
     setWhichButton('usePermit2');
@@ -140,8 +140,8 @@ export const Transaction = () => {
       const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
         transaction: [
           {
-            address: myContractToken,
-            abi: DestinityWorldTokenClaimABI,
+            address: 0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0,
+            abi: DWDABI.abi,
             functionName: 'signatureTransfer',
             args: [
               [
@@ -180,7 +180,7 @@ export const Transaction = () => {
       setButtonState('failed');
     }
   };
-*/
+
 
   return (
     <div className="grid w-full gap-4">
