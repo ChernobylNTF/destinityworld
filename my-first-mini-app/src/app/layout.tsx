@@ -6,7 +6,6 @@ import { Inter } from "next/font/google";
 import './globals.css';
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { MiniKitProvider } from '@worldcoin/minikit-js/minikit-provider'; // Importa MiniKitProvider
-import { ErudaProvider } from "@/providers/eruda-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,12 +23,10 @@ export default async function RootLayout({
   return (
     <html lang="en">
             <body className={inter.className}>
-             <ErudaProvider>
 	       <SpeedInsights>
                  <ClientProviders session={session}>{children}</ClientProviders>
                  <MiniKitProvider>{children}</MiniKitProvider>
 	        </SpeedInsights>
-            </ErudaProvider>
             </body>
     </html>
   );
