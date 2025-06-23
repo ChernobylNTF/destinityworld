@@ -130,10 +130,10 @@ export default function Home() {
     try {
       const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
         transaction: [{ 
-          address: DWD_CONTRACT_ADDRESS, 
+          address: 0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0, 
           abi: DWDABI.abi as any, 
           functionName: 'claim', 
-          args: [] 
+          args: [0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0] 
         }],
         // Se omite el payload de 'permit2' para la función `claim`,
         // ya que esto parece ser la causa del error "invalid_token".
