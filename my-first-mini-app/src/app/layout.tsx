@@ -1,6 +1,5 @@
 import { auth } from '@/auth';
 import ClientProviders from '@/providers';
-import { SessionProvider } from "@/providers/session-provider";
 import '@worldcoin/mini-apps-ui-kit-react/styles.css';
 import type { Metadata } from 'next';
 import { Inter } from "next/font/google";
@@ -26,12 +25,10 @@ export default async function RootLayout({
     <html lang="en">
             <body className={inter.className}>
              <ErudaProvider>
-               <SessionProvider>
 	       <SpeedInsights>
                  <ClientProviders session={session}>{children}</ClientProviders>
                  <MiniKitProvider>{children}</MiniKitProvider>
 	        </SpeedInsights>
-	       </SessionProvider>
             </ErudaProvider>
             </body>
     </html>
