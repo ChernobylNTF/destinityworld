@@ -27,8 +27,8 @@ const coinIpfsUrl = "https://gateway.pinata.cloud/ipfs/bafybeielalf3z7q7x7vngejt
 const EXPLORER_URL = "https://sepolia.worldscan.org";
 
 export default function Home() {
-  const { data: session, status } = useSession();
-  const isAuthenticated = status === 'authenticated';
+  const { data: session, status: sessionStatus } = useSession();
+  const isAuthenticated = sessionStatus === 'authenticated';
   const walletAddress = session?.user?.walletAddress;
 
   const [isVerified, setIsVerified] = useState(false);
@@ -38,8 +38,10 @@ export default function Home() {
   const [countdown, setCountdown] = useState('');
   const [transactionId, setTransactionId] = useState<string>('');
   const [onChainTxHash, setOnChainTxHash] = useState<string>('');
-  const [isClaimStatusLoading, setIsClaimStatusLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Ya no es necesario `MiniKit.init()` aquí si usas MiniKitProvider en tu layout.
+  
   const publicClient = useMemo(() => createPublicClient({
     chain: worldchain, transport: http(WORLDCHAIN_RPC_URL),
   }), []);
@@ -57,7 +59,6 @@ export default function Home() {
 
   const refreshClaimStatus = async () => {
     if (!walletAddress) return;
-    setIsClaimStatusLoading(true);
     try {
       const [lastClaim, claimFrequency] = await Promise.all([
         publicClient.readContract({ address: DWD_CONTRACT_ADDRESS, abi: DWDABI.abi, functionName: 'lastMint', args: [walletAddress as `0x${string}`] }),
@@ -65,17 +66,18 @@ export default function Home() {
       ]);
       setNextClaimTimestamp(Number(lastClaim) + Number(claimFrequency));
     } catch (err) { console.error("Error al obtener estado de reclamo:", err); }
-    finally { setIsClaimStatusLoading(false); }
   };
 
   useEffect(() => {
     const checkStatus = async () => {
       if (isAuthenticated && walletAddress) {
+        setIsLoading(true);
         try {
           const verificationStatus = await getIsUserVerified();
           if (verificationStatus.isVerified) setIsVerified(true);
         } catch (e) { console.warn("No se pudo comprobar la verificación:", e); }
         await refreshClaimStatus();
+        setIsLoading(false);
       }
     };
     checkStatus();
@@ -87,9 +89,7 @@ export default function Home() {
     } else if (transactionId && isConfirmed && receipt) {
       setClaimStatus('success');
       setOnChainTxHash(receipt.transactionHash);
-      setTimeout(() => {
-        refreshClaimStatus();
-      }, 2000);
+      setTimeout(() => { refreshClaimStatus(); }, 2000);
       setTimeout(() => { setClaimStatus('idle'); setTransactionId(''); }, 8000);
     } else if (transactionId && isError) {
       setClaimStatus('error');
@@ -120,7 +120,7 @@ export default function Home() {
 
   // --- FUNCIÓN DE RECLAMO CORREGIDA FINAL ---
   const handleClaimTokens = async () => {
-    const canClaim = !isClaimStatusLoading && (!nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000));
+    const canClaim = !isLoading && (!nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000));
     if (!canClaim || claimStatus !== 'idle') return;
 
     setClaimStatus('sending');
@@ -128,15 +128,15 @@ export default function Home() {
     setOnChainTxHash('');
 
     try {
+      // Llamada a la transacción siguiendo el patrón de "Get Token" del SDK
       const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
         transaction: [{ 
-          address: 0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0, 
+          address: DWD_CONTRACT_ADDRESS, 
           abi: DWDABI.abi as any, 
           functionName: 'claim', 
-          args: [0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0] 
+          args: [] 
         }],
-        // Se omite el payload de 'permit2' para la función `claim`,
-        // ya que esto parece ser la causa del error "invalid_token".
+        // NO se incluye `permit2` para la función `claim`.
       });
 
       if (finalPayload.status === 'success' && finalPayload.transaction_id) {
@@ -151,11 +151,11 @@ export default function Home() {
     }
   };
   
-  const canClaim = !isClaimStatusLoading && (!nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000));
+  const canClaim = !isLoading && (!nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000));
 
   const renderClaimSection = () => {
-    if (isClaimStatusLoading) {
-      return <div><p>Verificando estado del reclamo...</p></div>;
+    if (isLoading) {
+      return <div><p className="text-gray-400">Verificando estado...</p></div>;
     }
     if (canClaim) {
       const buttonText = claimStatus === 'sending' ? 'Enviando...' : claimStatus === 'confirming' ? 'Confirmando...' : 'Reclamar Tokens';
@@ -201,4 +201,4 @@ export default function Home() {
 
 declare module '../components/Verify' {
   export const Verify: ({ onSuccess }: { onSuccess: () => void }) => JSX.Element;
-    }
+}
