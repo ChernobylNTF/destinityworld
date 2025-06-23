@@ -17,6 +17,7 @@
     "@prisma/extension-accelerate": "^2.0.1",
     "@react-three/drei": "^10.0.8",
     "@react-three/fiber": "^9.1.2",
+    "@vercel/blob": "^1.1.1",
     "@vercel/speed-insights": "^1.2.0",
     "@worldcoin/mini-apps-ui-kit-react": "^1.0.2",
     "@worldcoin/minikit-js": "latest",
