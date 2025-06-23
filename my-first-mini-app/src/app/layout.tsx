@@ -27,15 +27,10 @@ export default async function Root({
 	children: React.ReactNode
 }>) {
 	return (
-    <html lang="en">
-        <MiniKitProvider>
-      <body className={inter.className}>{children}
-      <body className={`${geistSans.variable} ${geistMono.variable} `}>
-        <MiniKitProvider> {/* Envuelve el contenido con MiniKitProvider */}
-          <ClientProviders session={session}>{children}</ClientProviders>
-          <SpeedInsights />
-      </body>
-      </body>
-    </html>
-  );
+		<html lang="en">
+			<MiniKitProvider>
+				<body className={inter.className}>{children}</body>
+			</MiniKitProvider>
+		</html>
+		)
 }
