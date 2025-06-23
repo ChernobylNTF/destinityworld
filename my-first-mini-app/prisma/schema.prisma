@@ -1,0 +1,44 @@
+// Este es tu archivo prisma/schema.prisma
+
+// Define cómo se genera el cliente de Prisma, la herramienta
+// que usas en tu código para hablar con la base de datos.
+generator client {
+    provider = "prisma-client-js"
+}
+
+// Define la conexión a tu base de datos.
+datasource db {
+    provider = "postgresql" // Le decimos que estamos usando una base de datos PostgreSQL.
+      // Lee la URL de conexión desde tus variables de entorno.
+        // Esto es crucial para la seguridad y para que funcione en Vercel.
+          url      = env("DATABASE_URL")
+          directUrl = env("DATABASE_URL")
+}
+
+// Define el modelo (la tabla) para tus usuarios.
+model User {
+    // --- Columnas de la tabla ---
+
+      // Un identificador único para cada usuario, generado automáticamente.
+        id                String   @id @default(cuid())
+
+          // La dirección de la billetera del usuario. Es `@unique`, lo que significa
+            // que no puede haber dos usuarios con la misma dirección.
+              walletAddress     String   @unique
+
+                // El nombre de usuario. El `?` significa que es opcional (puede ser nulo).
+                  username          String?
+
+                    // La URL de la foto de perfil personalizada. También es opcional.
+                      profilePictureUrl String?
+
+                        // La racha de reclamos del usuario. Es un número entero y su valor
+                          // por defecto es 0 cuando se crea un nuevo usuario.
+                            streak            Int      @default(0)
+
+                              // La fecha y hora en que se creó el registro del usuario. Se establece automáticamente.
+                                createdAt         DateTime @default(now())
+
+                                  // La fecha y hora en que se actualizó el registro por última vez. Se actualiza automáticamente.
+                                    updatedAt         DateTime @updatedAt
+}
