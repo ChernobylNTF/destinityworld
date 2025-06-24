@@ -133,7 +133,7 @@ export default function Home() {
         transaction: [{ 
           address: DWD_CONTRACT_ADDRESS, 
           abi: DWDABI.abi as any, 
-          functionName: 'claim', 
+          functionName: 'CLAIM_AMOUNT', 
           args: [] 
         }],
         // NO se incluye `permit2` para la función `claim`.
