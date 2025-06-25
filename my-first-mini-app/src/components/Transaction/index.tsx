@@ -1,6 +1,6 @@
 'use client';
 
-import DWDABI from '@/abi/TestContract.json';
+import WorldIdClaimTokenABI from '@/abi/WorldIdClaimToken.json';
 import { Button, LiveFeedback } from '@worldcoin/mini-apps-ui-kit-react';
 import { MiniKit } from '@worldcoin/minikit-js';
 import { useWaitForTransactionReceipt } from '@worldcoin/minikit-react';
@@ -19,7 +19,7 @@ import { worldchain } from 'viem/chains';
  */
 export const Transaction = () => {
   // See the code for this contract here: https://worldscan.org/address/0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0#code
-  const myContractToken = '0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0';
+  const myContractToken = '0x14c8e69DfBD6210f9e9fF9838CA2fD83D00D39a0';
   const [buttonState, setButtonState] = useState<
     'pending' | 'success' | 'failed' | undefined
   >(undefined);
@@ -27,7 +27,7 @@ export const Transaction = () => {
     'getToken',
   );
 
-  // This triggers the useWaitForTransactionReceipt hook when updated
+  // This triggers theuseWaitForTransactionReceipt hook when updated
   const [transactionId, setTransactionId] = useState<string>('');
 
   // Feel free to use your own RPC provider for better performance
@@ -78,7 +78,7 @@ export const Transaction = () => {
         transaction: [
           {
             address: myContractToken,
-            abi: DWDABI,
+            abi: WorldIdClaimTokeABI,
             functionName: 'CLAIM_AMOUNT',
             args: [],
           },
@@ -135,7 +135,7 @@ export const Transaction = () => {
         transaction: [
           {
             address: myContractToken,
-            abi: TestContractABI,
+            abi: WorldIdClaimTokenABI,
             functionName: 'signatureTransfer',
             args: [
               [
