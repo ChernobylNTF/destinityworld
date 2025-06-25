@@ -10,11 +10,11 @@ import { createPublicClient, http, formatUnits } from 'viem';
 import { worldchain } from 'viem/chains'; // Usas Worldchain, ¡correcto!
 
 // ABI de tu contrato de token DWD
-import DWDABI from '@/abi/DWD.json'; 
+import WorldIdClaimTokenABI from '@/abi/WorldIdClaimToken.json'; 
 
 // --- Configuración ---
 // Dirección del contrato DWD en Worldchain
-const DWD_CONTRACT_ADDRESS = '0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0'; 
+const WorldIdClaimToken_CONTRACT_ADDRESS = '0x14c8e69DfBD6210f9e9fF9838CA2fD83D00D39a0'; 
 // RPC público para la red de pruebas de Worldchain (Sepolia)
 const WORLDCHAIN_RPC_URL = 'https://worldchain-sepolia.g.alchemy.com/public';
 
@@ -48,8 +48,8 @@ const WalletPage = () => {
 
       try {
         const balanceBigInt = await publicClient.readContract({
-          address: DWD_CONTRACT_ADDRESS,
-          abi: DWDABI.abi,
+          address: WorldIdClaimToken_CONTRACT_ADDRESS,
+          abi: WorldIdClaimTokenABI.abi,
           functionName: 'balanceOf',
           args: [walletAddress as `0x${string}`],
         });
