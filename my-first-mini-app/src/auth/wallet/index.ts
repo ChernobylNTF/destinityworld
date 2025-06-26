@@ -17,7 +17,7 @@ export const walletAuth = async () => {
 
   const result = await MiniKit.commandsAsync.walletAuth({
     nonce,
-    expirationTime: new Date(Date.now() + 1  * 24 * 60 * 60 * 1000),
+    expirationTime: new Date(Date.now() + 7  * 24 * 60 * 60 * 1000),
     notBefore: new Date(Date.now() - 24 * 60 * 60 * 1000),
     statement: `Authenticate (${crypto.randomUUID().replace(/-/g, '')}).`,
   });
