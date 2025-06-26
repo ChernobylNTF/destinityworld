@@ -61,7 +61,7 @@ export default function Home() {
     if (!walletAddress) return;
     try {
       const [lastClaim, claimFrequency] = await Promise.all([
-        publicClient.readContract({ address: WorldIdClaimToken_CONTRACT_ADDRESS, abi: WorldIdClaimTokenABI.abi, functionName: 'lastMint', args: [walletAddress as `0x${string}`] }),
+        publicClient.readContract({ address: WorldIdClaimToken_CONTRACT_ADDRESS, abi: WorldIdClaimTokenABI.abi, functionName: 'lastClaimTimestamp', args: [walletAddress as `0x${string}`] }),
         publicClient.readContract({ address: WorldIdClaimToken_CONTRACT_ADDRESS, abi: WorldIdClaimTokenABI.abi, functionName: 'CLAIM_FREQUENCY_SECONDS' })
       ]);
       setNextClaimTimestamp(Number(lastClaim) + Number(claimFrequency));
