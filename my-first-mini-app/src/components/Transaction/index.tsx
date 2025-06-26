@@ -79,7 +79,7 @@ export const Transaction = () => {
           {
             address: myContractToken,
             abi: WorldIdClaimTokenABI,
-            functionName: 'mintToken',
+            functionName: 'claimTokens',
             args: [],
           },
         ],
