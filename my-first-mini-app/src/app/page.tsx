@@ -67,6 +67,7 @@ export default function Home() {
   };
   
   useEffect(() => {
+    // Ya no necesitamos `getIsUserVerified` aquí, porque el contrato lo hará
     if (isAuthenticated && walletAddress) {
       refreshClaimStatus();
     } else if(sessionStatus !== 'loading') {
@@ -120,7 +121,7 @@ export default function Home() {
       // 1. Obtenemos la prueba de World ID del usuario.
       const verifyResult = await MiniKit.verifyAsync({
         app_id: process.env.NEXT_PUBLIC_APP_ID as `app_${string}`,
-        action: 'claim-destinity-token', // Acción única para este reclamo
+        action: 'testing-action', // Acción única para este reclamo
         signal: walletAddress, // Usamos la dirección como `signal` para máxima seguridad
       });
 
@@ -212,4 +213,4 @@ export default function Home() {
       <Page.Footer className="px-0 fixed bottom-0 w-full bg-white z-50"><Navigation /></Page.Footer>
     </Page>
   );
-    }
+}
