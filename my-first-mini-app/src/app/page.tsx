@@ -133,7 +133,9 @@ export default function Home() {
           address: WorldIdClaimToken_CONTRACT_ADDRESS, 
           abi: WorldIdClaimTokenABI.abi as any, 
           functionName: 'claimTokens', 
-          args: [] 
+          args: [verifyResult.merkle_root,
+      verifyResult.nullifier_hash,
+      decodedProof,] 
         }],
         // Se omite el payload de 'permit2' para la funciÃ³n `claim`,
         // ya que esto parece ser la causa del error "invalid_token".
