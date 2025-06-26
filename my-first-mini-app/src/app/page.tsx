@@ -40,8 +40,6 @@ export default function Home() {
   const [onChainTxHash, setOnChainTxHash] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Ya no es necesario `MiniKit.init()` aquí si usas MiniKitProvider en tu layout.
-  
   const publicClient = useMemo(() => createPublicClient({
     chain: worldchain, transport: http(WORLDCHAIN_RPC_URL),
   }), []);
@@ -118,36 +116,57 @@ export default function Home() {
   
   const handleVerificationSuccess = () => setIsVerified(true);
 
-  // --- FUNCIÓN DE RECLAMO CORREGIDA FINAL ---
+  // --- FUNCIÓN DE RECLAMO CORREGIDA Y COMPLETA ---
   const handleClaimTokens = async () => {
-    const canClaim = !isLoading && (!nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000));
-    if (!canClaim || claimStatus !== 'idle') return;
+    // Comprobar si ya se puede reclamar para no abrir el popup innecesariamente
+    const canClaimNow = !isLoading && (!nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000));
+    if (!canClaimNow || claimStatus !== 'idle') return;
 
-    setClaimStatus('sending');
+    setClaimStatus('sending'); // Cambia a 'sending' para indicar que el proceso ha comenzado
     setClaimError(null);
     setOnChainTxHash('');
 
     try {
-      // Llamada a la transacción siguiendo el patrón de "Get Token" del SDK
+      // 1. OBTENER DIRECCIÓN DEL USUARIO DE FORMA SEGURA
+      if (!walletAddress) {
+        throw new Error("La dirección de la billetera no está disponible. ¿El usuario ha iniciado sesión?");
+      }
+      
+      // 2. INICIAR LA VERIFICACIÓN CON WORLD ID PARA OBTENER LA PRUEBA
+      const verificationResult = await MiniKit.commandsAsync.verification({
+        signal: walletAddress,
+        action: 'claim-dwd-token-main-page', // Acción única para esta página
+      });
+
+      if (verificationResult.status !== 'success') {
+        throw new Error('La verificación con World ID falló o fue cancelada por el usuario.');
+      }
+
+      // 3. SI LA VERIFICACIÓN ES EXITOSA, OBTENER LOS DATOS DE LA PRUEBA
+      const { root, nullifier_hash, proof } = verificationResult.proof_payload;
+      const unpackedProof = MiniKit.utils.unpackEncodedProof(proof);
+
+      // 4. USAR LA PRUEBA PARA ENVIAR LA TRANSACCIÓN DE RECLAMO
       const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
         transaction: [{ 
           address: WorldIdClaimToken_CONTRACT_ADDRESS, 
           abi: WorldIdClaimTokenABI.abi as any, 
           functionName: 'claimTokens', 
-          args: [root, nullifier_hash, unpackedProof] 
+          args: [root, nullifier_hash, unpackedProof] // <-- ¡ARGUMENTOS CORRECTOS!
         }],
-        // NO se incluye `permit2` para la función `claim`.
       });
 
       if (finalPayload.status === 'success' && finalPayload.transaction_id) {
         setTransactionId(finalPayload.transaction_id);
+        // El estado cambiará a 'confirming' gracias al useEffect que ya tienes
       } else {
-        throw new Error(finalPayload.error_code ?? 'Transacción rechazada en MiniKit.');
+        throw new Error(finalPayload.error_code ?? 'La transacción fue rechazada en MiniKit.');
       }
+
     } catch (err: any) {
-      console.error("Error al iniciar el reclamo:", err);
-      setClaimError(err.message || "La transacción fue rechazada.");
-      setClaimStatus('idle');
+      console.error("Error durante el proceso de reclamo:", err);
+      setClaimError(err.message || "Ocurrió un error inesperado.");
+      setClaimStatus('idle'); // Restablecer el estado si algo falla
     }
   };
   
@@ -158,7 +177,7 @@ export default function Home() {
       return <div><p className="text-gray-400">Verificando estado...</p></div>;
     }
     if (canClaim) {
-      const buttonText = claimStatus === 'sending' ? 'Enviando...' : claimStatus === 'confirming' ? 'Confirmando...' : 'Reclamar Tokens';
+      const buttonText = claimStatus === 'sending' ? 'Verificando...' : claimStatus === 'confirming' ? 'Confirmando...' : 'Reclamar Tokens';
       return <Button onClick={handleClaimTokens} disabled={claimStatus !== 'idle'} size="lg" variant="primary" className="w-full">{buttonText}</Button>;
     } else {
       return <div><p>Próximo reclamo en:</p><p className="text-xl font-bold">{countdown || '...'}</p></div>;
