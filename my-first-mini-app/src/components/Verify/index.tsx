@@ -26,7 +26,7 @@ export const Verify = ({ onSuccess }: { onSuccess: () => void }) => {
   const onClickVerify = async (verificationLevel: VerificationLevel) => {
     setButtonState('pending');
     setWhichVerification(verificationLevel);
-    const result = await MiniKit.commandsAsync.verify({
+    const result = await window.MiniKit.verifyAsync({
       action: 'testing-action', // Make sure to create this in the developer portal -> incognito actions
       verification_level: verificationLevel.Orb,
     });
