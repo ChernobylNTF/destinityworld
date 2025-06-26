@@ -134,7 +134,7 @@ export default function Home() {
           address: WorldIdClaimToken_CONTRACT_ADDRESS, 
           abi: WorldIdClaimTokenABI.abi as any, 
           functionName: 'claimTokens', 
-          args: [] 
+          args: [root, nullifier_hash, unpackedProof] 
         }],
         // NO se incluye `permit2` para la función `claim`.
       });
