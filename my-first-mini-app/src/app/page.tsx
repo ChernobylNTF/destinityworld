@@ -21,7 +21,7 @@ import { worldchain } from 'viem/chains';
 import WorldIdClaimTokenABI from '@/abi/WorldIdClaimToken.json';
 
 // --- Configuración ---
-const WorldIdClaimToken_CONTRACT_ADDRESS = '0x14c8e69DfBD6210f9e9fF9838CA2fD83D00D39a0';
+const myContractToken = '0x14c8e69DfBD6210f9e9fF9838CA2fD83D00D39a0';
 const WORLDCHAIN_RPC_URL = 'https://worldchain-sepolia.g.alchemy.com/public';
 const coinIpfsUrl = "https://gateway.pinata.cloud/ipfs/bafybeielalf3z7q7x7vngejt53qosizddaltox7laqngxjdqhf2vyn6egq";
 const EXPLORER_URL = "https://sepolia.worldscan.org";
@@ -59,8 +59,8 @@ export default function Home() {
     if (!walletAddress) return;
     try {
       const [lastClaim, claimFrequency] = await Promise.all([
-        publicClient.readContract({ address: WorldIdClaimToken_CONTRACT_ADDRESS, abi: WorldIdClaimTokenABI.abi, functionName: 'lastClaimTimestamp', args: [walletAddress as `0x${string}`] }),
-        publicClient.readContract({ address: WorldIdClaimToken_CONTRACT_ADDRESS, abi: WorldIdClaimTokenABI.abi, functionName: 'CLAIM_COOLDOWN' })
+        publicClient.readContract({ address: myContractToken, abi: WorldIdClaimTokenABI.abi, functionName: 'lastClaimTimestamp', args: [walletAddress as `0x${string}`] }),
+        publicClient.readContract({ address: myContractToken, abi: WorldIdClaimTokenABI.abi, functionName: 'CLAIM_COOLDOWN' })
       ]);
       setNextClaimTimestamp(Number(lastClaim) + Number(claimFrequency));
     } catch (err) { console.error("Error al obtener estado de reclamo:", err); }
@@ -149,7 +149,7 @@ export default function Home() {
       // 4. USAR LA PRUEBA PARA ENVIAR LA TRANSACCIÓN DE RECLAMO
       const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
         transaction: [{ 
-          address: WorldIdClaimToken_CONTRACT_ADDRESS, 
+          address: myContractToken, 
           abi: WorldIdClaimTokenABI.abi as any, 
           functionName: 'claimTokens', 
           args: [root, nullifier_hash, unpackedProof] // <-- ¡ARGUMENTOS CORRECTOS!
