@@ -1,114 +1,78 @@
 'use client';
+
 import { Button, LiveFeedback } from '@worldcoin/mini-apps-ui-kit-react';
 import { MiniKit, VerificationLevel } from '@worldcoin/minikit-js';
 import { useState } from 'react';
 
-/**
- * This component is an example of how to use World ID in Mini Apps
- * Minikit commands must be used on client components
- * It's critical you verify the proof on the server side
- * Read More: https://docs.world.org/mini-apps/commands/verifying-the-proof
- */
-// Modificado para aceptar la prop onSuccess
-export const Verify = ({ onSuccess }: { onSuccess: () => void }) => {
-  const [buttonState, setButtonState] = useState<
-    'pending' | 'success' | 'failed' | undefined
-  >(undefined);
+// --- Definimos los tipos que el componente padre (Home) espera recibir ---
+interface ProofPayload {
+  root: `0x${string}`;
+  nullifier_hash: `0x${string}`;
+  proof: `0x${string}`;
+}
 
-  const [whichVerification, setWhichVerification] = useState<VerificationLevel>(
-    VerificationLevel.Device,
-  );
+interface VerificationResult {
+  status: 'success' | 'failed' | 'cancelled';
+  proof_payload?: ProofPayload;
+}
 
-  // >>> Añadimos una variable para controlar la visibilidad del botón Orb <<<
-  const showOrbButton = false; // Cambia a true si quieres mostrarlo de nuevo
-  // >>> Fin de la variable <<<
+// --- El componente ahora espera una función onSuccess que acepta el resultado ---
+export const Verify = ({ onSuccess }: { onSuccess: (result: VerificationResult) => void }) => {
+  const [buttonState, setButtonState] = useState<'pending' | 'success' | 'failed' | undefined>(undefined);
 
-  const onClickVerify = async (verificationLevel: VerificationLevel) => {
+  const onClickVerify = async () => {
     setButtonState('pending');
-    setWhichVerification(verificationLevel);
-    const result = await MiniKit.commandsAsync.verify({
-      action: 'testing-action', // Make sure to create this in the developer portal -> incognito actions
-      verification_level: verificationLevel.Orb,
-    });
-    console.log(result.finalPayload);
-    // Verify the proof
-    const response = await fetch('/api/verify-proof', {
-      method: 'POST',
-      body: JSON.stringify({
-        payload: result.finalPayload,
-        action: 'testing-action',
-      }),
-    });
 
-    const data = await response.json();
-    if (data.verifyRes.success) {
-      setButtonState('success');
-      // Llamar a la función onSuccess proporcionada por el padre
-      onSuccess();
-      // Normalmente you'd do something here since the user is verified
-      // Here we'll just do nothing
-    } else {
+    try {
+      // 1. Iniciar la verificación.
+      const result = await MiniKit.commandsAsync.verification({
+        action: 'claim-dwd-token',
+        signal: (await MiniKit.getUser()).walletAddress,
+        verification_level: VerificationLevel.Orb,
+      });
+
+      // 2. ¡LÍNEA CLAVE! Pasamos el resultado completo al componente padre.
+      onSuccess(result);
+
+      // 3. Actualizamos el estado del botón localmente si fue exitoso.
+      if (result.status === 'success') {
+        setButtonState('success');
+      } else {
+        setButtonState('failed');
+        setTimeout(() => setButtonState(undefined), 3000);
+      }
+
+    } catch (error) {
+      console.error("Error durante la verificación:", error);
       setButtonState('failed');
-
-      // Reset the button state after 3 seconds
-      setTimeout(() => {
-        setButtonState(undefined);
-      }, 2000);
+      // Informamos al padre que la verificación falló.
+      onSuccess({ status: 'failed' }); 
+      setTimeout(() => setButtonState(undefined), 3000);
     }
   };
 
   return (
-    <div className="grid w-full gap-0">
-      <p className="text-lg font-semibold"></p>
+    <div className="grid w-full gap-2">
+      <p className="text-center text-gray-400">Debes verificarte para poder reclamar.</p>
       <LiveFeedback
         label={{
-          failed: 'Failed to verify',
-          pending: 'Verifying',
-          success: 'Verified',
+          failed: 'Verificación Falló',
+          pending: 'Verificando en World App...',
+          success: '¡Verificado!',
         }}
-        state={
-          whichVerification === VerificationLevel.Device
-            ? buttonState
-            : undefined
-        }
+        state={buttonState}
         className="w-full"
-        >
+      >
         <Button
-          onClick={() => onClickVerify(VerificationLevel.Device)}
-          disabled={buttonState === 'pending'}
+          onClick={onClickVerify}
+          disabled={buttonState === 'pending' || buttonState === 'success'}
           size="lg"
-          variant="tertiary"
-          className="w-full"
-          >
-          ⚠️ Verificación
-           </Button>
-      </LiveFeedback>
-
-      {/* >>> Condición para renderizar el botón Orb <<< */}
-      {showOrbButton && (
-        <LiveFeedback
-          label={{
-            failed: 'Failed to verify',
-            pending: 'Verifying',
-            success: 'Verified',
-          }}
-          state={
-            whichVerification === VerificationLevel.Orb ? buttonState : undefined
-          }
+          variant="primary"
           className="w-full"
         >
-          <Button
-            onClick={() => onClickVerify(VerificationLevel.Orb)}
-            disabled={buttonState === 'pending'}
-            size="lg"
-            variant="primary"
-            className="w-full"
-          >
-            Verify (Orb)
-          </Button>
-        </LiveFeedback>
-      )}
-      {/* >>> Fin de la condición <<< */}
+          Verificar con World ID
+        </Button>
+      </LiveFeedback>
     </div>
   );
 };
