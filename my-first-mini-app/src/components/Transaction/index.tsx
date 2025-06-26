@@ -77,7 +77,7 @@ export const Transaction = () => {
     // 1. PRIMERO, VERIFICAR CON WORLD ID
     const verificationResult = await MiniKit.commandsAsync.verification({
       signal: (await MiniKit.getUser()).walletAddress, // La señal es la wallet del usuario
-      action: 'claim-dwd-token', // Una acción única
+      action: 'testing-action', // Una acción única
       // ... otras opciones de configuración del ID Kit
     });
 
