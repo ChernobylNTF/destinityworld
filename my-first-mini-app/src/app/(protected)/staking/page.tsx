@@ -12,7 +12,7 @@ import { MiniKit } from "@worldcoin/minikit-js";
 import { useWaitForTransactionReceipt } from '@worldcoin/minikit-react';
 import { createPublicClient, http, formatUnits, parseEther, type TransactionReceipt } from 'viem';
 import { worldchain } from 'viem/chains';
-import DWDABI from '@/abi/DWD.json'; // ABI de tu token DWD
+import WorldIdClaimTokenABI from '@/abi/WorldIdClaimToken.json'; // ABI de tu token DWD
 
 // --- ABI DE EJEMPLO PARA EL CONTRATO DE STAKING ---
 // ¡Deberás reemplazar esto con el ABI real de tu contrato de Staking!
@@ -24,7 +24,7 @@ const StakingABI = [
 ];
 
 // --- Configuración ---
-const DWD_CONTRACT_ADDRESS = '0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0';
+const WorldIdClaimToken_CONTRACT_ADDRESS = '0x14c8e69DfBD6210f9e9fF9838CA2fD83D00D39a0';
 // --- ¡IMPORTANTE! Reemplaza esto con la dirección de tu contrato de Staking ---
 const STAKING_CONTRACT_ADDRESS = '0x...TU_CONTRATO_DE_STAKING'; 
 const WORLDCHAIN_RPC_URL = 'https://worldchain-sepolia.g.alchemy.com/public';
@@ -59,7 +59,7 @@ export default function StakingPage() {
     if (!walletAddress) return;
     try {
       const [dwdBal, stakedBal, rewardsBal] = await Promise.all([
-        publicClient.readContract({ address: DWD_CONTRACT_ADDRESS, abi: DWDABI.abi, functionName: 'balanceOf', args: [walletAddress as `0x${string}`] }),
+        publicClient.readContract({ address: WorldIdClaimToken_CONTRACT_ADDRESS, abi: WorldIdClaimTokenABI.abi, functionName: 'balanceOf', args: [walletAddress as `0x${string}`] }),
         publicClient.readContract({ address: STAKING_CONTRACT_ADDRESS, abi: StakingABI, functionName: 'stakedBalance', args: [walletAddress as `0x${string}`] }),
         publicClient.readContract({ address: STAKING_CONTRACT_ADDRESS, abi: StakingABI, functionName: 'earned', args: [walletAddress as `0x${string}`] })
       ]);
@@ -102,8 +102,8 @@ export default function StakingPage() {
       
       const approvePayload = await MiniKit.commandsAsync.sendTransaction({
         transaction: [{
-          address: DWD_CONTRACT_ADDRESS,
-          abi: DWDABI.abi,
+          address: WorldIdClaimToken_CONTRACT_ADDRESS,
+          abi: WorldIdClaimTokenABI.abi,
           functionName: 'approve',
           args: [STAKING_CONTRACT_ADDRESS, amountToStake],
         }],
