@@ -74,13 +74,24 @@ export const Transaction = () => {
     setButtonState('pending');
 
     try {
+    // 1. PRIMERO, VERIFICAR CON WORLD ID
+    const verificationResult = await MiniKit.commandsAsync.verification({
+      signal: (await MiniKit.getUser()).walletAddress, // La señal es la wallet del usuario
+      action: 'claim-dwd-token', // Una acción única
+      // ... otras opciones de configuración del ID Kit
+    });
+
+    if (verificationResult.status === 'success') {
+      const { root, nullifier_hash, proof } = verificationResult.proof_payload;
+      const unpackedProof = MiniKit.utils.unpackEncodedProof(proof); // Desempaquetar la prueba
+      
       const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
         transaction: [
           {
             address: myContractToken,
-            abi: WorldIdClaimTokeABI,
+            abi: WorldIdClaimTokenABI,
             functionName: 'claimTokens',
-            args: [],
+            args: [root, nullifier_hash, unpackedProof],
           },
         ],
       });
