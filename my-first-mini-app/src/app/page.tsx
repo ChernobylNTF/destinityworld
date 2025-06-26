@@ -135,7 +135,7 @@ export default function Home() {
       // 2. INICIAR LA VERIFICACIÓN CON WORLD ID PARA OBTENER LA PRUEBA
       const verificationResult = await MiniKit.commandsAsync.verification({
         signal: walletAddress,
-        action: 'claim-dwd-token-main-page', // Acción única para esta página
+        action: 'testing-action', // Acción única para esta página
       });
 
       if (verificationResult.status !== 'success') {
