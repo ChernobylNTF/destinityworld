@@ -116,7 +116,7 @@ export const Transaction = () => {
         setButtonState(undefined);
       }, 3000);
     }
-  };
+  }
 
   // This is a basic transaction call to use Permit2 to spend the token you minted
   // Make sure to call Mint Token first
@@ -229,4 +229,4 @@ export const Transaction = () => {
       </LiveFeedback>
     </div>
   );
-};
+}
