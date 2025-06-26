@@ -159,7 +159,7 @@ transaction: [
 
 address: myContractToken,
 
-abi: WorldIdClaimTokeABI,
+abi: WorldIdClaimTokenABI,
 
 functionName: 'claimTokens',
 
