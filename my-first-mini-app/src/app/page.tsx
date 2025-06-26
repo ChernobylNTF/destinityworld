@@ -20,6 +20,17 @@ import { createPublicClient, http, type TransactionReceipt } from 'viem';
 import { worldchain } from 'viem/chains';
 import WorldIdClaimTokenABI from '@/abi/WorldIdClaimToken.json';
 
+interface ProofPayload {
+  root: `0x${string}`;
+  nullifier_hash: `0x${string}`;
+  proof: `0x${string}`;
+}
+
+interface VerificationResult {
+  status: 'success' | 'failed' | 'cancelled';
+  proof_payload?: ProofPayload;
+}
+
 // --- Configuración ---
 const myContractToken = '0x14c8e69DfBD6210f9e9fF9838CA2fD83D00D39a0';
 const WORLDCHAIN_RPC_URL = 'https://worldchain-sepolia.g.alchemy.com/public';
@@ -39,9 +50,7 @@ export default function Home() {
   const [transactionId, setTransactionId] = useState<string>('');
   const [onChainTxHash, setOnChainTxHash] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
-
-  // Ya no es necesario `MiniKit.init()` aquí si usas MiniKitProvider en tu layout.
-  
+  const [proofPayload, setProofPayload] = useState<ProofPayload | null>(null);
   const publicClient = useMemo(() => createPublicClient({
     chain: worldchain, transport: http(WORLDCHAIN_RPC_URL),
   }), []);
