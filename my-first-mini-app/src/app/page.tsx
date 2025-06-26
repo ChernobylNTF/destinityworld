@@ -120,6 +120,10 @@ export default function Home() {
 
   // --- FUNCIÓN DE RECLAMO CORREGIDA FINAL ---
   const handleClaimTokens = async () => {
+    if (!proofPayload) {
+    setClaimError("La prueba de verificación no se encontró. Por favor, verifica tu identidad de nuevo.");
+    return;
+    }
     const canClaim = !isLoading && (!nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000));
     if (!canClaim || claimStatus !== 'idle') return;
 
@@ -129,6 +133,10 @@ export default function Home() {
 
     try {
       // Llamada a la transacción siguiendo el patrón de "Get Token" del SDK
+      const { root, nullifier_hash, proof } = proofPayload;
+    
+      const unpackedProof = MiniKit.utils.unpackEncodedProof(proof);
+      
       const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
         transaction: [{ 
           address: myContractToken, 
