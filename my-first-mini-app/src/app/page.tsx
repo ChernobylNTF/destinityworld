@@ -133,7 +133,7 @@ export default function Home() {
         transaction: [{ 
           address: WorldIdClaimToken_CONTRACT_ADDRESS, 
           abi: WorldIdClaimTokenABI.abi as any, 
-          functionName: 'CLAIM_AMOUNT', 
+          functionName: 'claimTokens', 
           args: [] 
         }],
         // NO se incluye `permit2` para la función `claim`.
