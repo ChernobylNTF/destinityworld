@@ -24,7 +24,7 @@ const StakingABI = [
 ];
 
 // --- Configuración ---
-const WorldIdClaimToken_CONTRACT_ADDRESS = '0x14c8e69DfBD6210f9e9fF9838CA2fD83D00D39a0';
+const myContractToken = '0x14c8e69DfBD6210f9e9fF9838CA2fD83D00D39a0';
 // --- ¡IMPORTANTE! Reemplaza esto con la dirección de tu contrato de Staking ---
 const STAKING_CONTRACT_ADDRESS = '0x...TU_CONTRATO_DE_STAKING'; 
 const WORLDCHAIN_RPC_URL = 'https://worldchain-sepolia.g.alchemy.com/public';
@@ -59,7 +59,7 @@ export default function StakingPage() {
     if (!walletAddress) return;
     try {
       const [dwdBal, stakedBal, rewardsBal] = await Promise.all([
-        publicClient.readContract({ address: WorldIdClaimToken_CONTRACT_ADDRESS, abi: WorldIdClaimTokenABI.abi, functionName: 'balanceOf', args: [walletAddress as `0x${string}`] }),
+        publicClient.readContract({ address: myContractToken, abi: WorldIdClaimTokenABI.abi, functionName: 'balanceOf', args: [walletAddress as `0x${string}`] }),
         publicClient.readContract({ address: STAKING_CONTRACT_ADDRESS, abi: StakingABI, functionName: 'stakedBalance', args: [walletAddress as `0x${string}`] }),
         publicClient.readContract({ address: STAKING_CONTRACT_ADDRESS, abi: StakingABI, functionName: 'earned', args: [walletAddress as `0x${string}`] })
       ]);
@@ -102,7 +102,7 @@ export default function StakingPage() {
       
       const approvePayload = await MiniKit.commandsAsync.sendTransaction({
         transaction: [{
-          address: WorldIdClaimToken_CONTRACT_ADDRESS,
+          address: myContractToken,
           abi: WorldIdClaimTokenABI.abi,
           functionName: 'approve',
           args: [STAKING_CONTRACT_ADDRESS, amountToStake],
