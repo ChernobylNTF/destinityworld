@@ -119,7 +119,7 @@ export default function Home() {
 
     try {
       // 1. Obtenemos la prueba de World ID del usuario.
-      const verifyResult = await MiniKit.verifyAsync({
+      const verifyResult = await window.MiniKit.verifyAsync({
         app_id: process.env.NEXT_PUBLIC_APP_ID as `app_${string}`,
         action: 'testing-action', // Acción única para este reclamo
         signal: walletAddress, // Usamos la dirección como `signal` para máxima seguridad
