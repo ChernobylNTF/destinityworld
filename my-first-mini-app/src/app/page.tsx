@@ -13,14 +13,14 @@ import Link from 'next/link';
 import SpinningCoin from '../components/SpinningCoin';
 
 // --- LÓGICA DE BLOCKCHAIN ---
-import { MiniKit } from "@worldcoin/minikit-js";
+// Ya no necesitamos importar MiniKit aquí, usaremos la instancia global `window.MiniKit`
 import { useWaitForTransactionReceipt } from '@worldcoin/minikit-react';
 import { createPublicClient, http, type TransactionReceipt, decodeAbiParameters, parseAbiParameters } from 'viem';
 import { worldchain } from 'viem/chains';
-import WorldIdClaimTokenABI from '@/abi/WorldIdClaimToken.json'; // Tu ABI
+import WorldIdClaimTokenABI from '@/abi/WorldIdClaimToken.json';
 
 // --- Configuración ---
-const WorldIdClaimToken_CONTRACT_ADDRESS = '0x14c8e69DfBD6210f9e9fF9838CA2fD83D00D39a0'; // Tu dirección de contrato
+const WorldIdClaimToken_CONTRACT_ADDRESS = '0x14c8e69DfBD6210f9e9fF9838CA2fD83D00D39a0';
 const WORLDCHAIN_RPC_URL = 'https://worldchain-sepolia.g.alchemy.com/public';
 const coinIpfsUrl = "https://gateway.pinata.cloud/ipfs/bafybeielalf3z7q7x7vngejt53qosizddaltox7laqngxjdqhf2vyn6egq";
 const EXPLORER_URL = "https://sepolia.worldscan.org";
@@ -67,7 +67,6 @@ export default function Home() {
   };
   
   useEffect(() => {
-    // Ya no necesitamos `getIsUserVerified` aquí, porque el contrato lo hará
     if (isAuthenticated && walletAddress) {
       refreshClaimStatus();
     } else if(sessionStatus !== 'loading') {
@@ -108,39 +107,42 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [nextClaimTimestamp]);
   
-  // --- FUNCIÓN DE RECLAMO CORREGIDA PARA VERIFICACIÓN ON-CHAIN ---
+  // --- FUNCIÓN DE RECLAMO CORREGIDA ---
   const handleClaimTokens = async () => {
     const canClaim = !isLoading && (!nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000));
-    if (!canClaim || claimStatus !== 'idle' || !walletAddress) return;
+    if (!canClaim || claimStatus !== 'idle' || !walletAddress || !window.MiniKit?.verifyAsync) {
+        console.error("No se puede reclamar: condiciones no cumplidas o MiniKit no está listo.");
+        setClaimError("MiniKit no está listo. Inténtalo de nuevo.");
+        return;
+    }
 
     setClaimStatus('verifying');
     setClaimError(null);
     setOnChainTxHash('');
 
     try {
-      // 1. Obtenemos la prueba de World ID del usuario.
+      // 1. Obtenemos la prueba usando la instancia global `window.MiniKit`
       const verifyResult = await window.MiniKit.verifyAsync({
         app_id: process.env.NEXT_PUBLIC_APP_ID as `app_${string}`,
-        action: 'testing-action', // Acción única para este reclamo
-        signal: walletAddress, // Usamos la dirección como `signal` para máxima seguridad
+        action: 'claim-destinity-token',
+        signal: walletAddress,
       });
 
       if (verifyResult.status !== 'success' || !verifyResult.proof) {
         throw new Error(verifyResult.error_code ?? 'La verificación de World ID falló.');
       }
       
-      // Decodificamos la prueba para obtener los argumentos necesarios para el contrato
       const [decodedProof] = decodeAbiParameters(parseAbiParameters('uint256[8]'), verifyResult.proof as `0x${string}`);
 
       setClaimStatus('sending');
 
-      // 2. Enviamos la transacción al contrato, pasando la prueba como argumentos.
-      const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
+      // 2. Enviamos la transacción usando la instancia global `window.MiniKit`
+      const { finalPayload } = await window.MiniKit.commandsAsync.sendTransaction({
         transaction: [{ 
           address: WorldIdClaimToken_CONTRACT_ADDRESS, 
           abi: WorldIdClaimTokenABI.abi as any, 
-          functionName: 'claimTokens', // La función correcta de tu contrato
-          args: [ // Los argumentos correctos que pide tu contrato
+          functionName: 'claimTokens', 
+          args: [
             verifyResult.merkle_root,
             verifyResult.nullifier_hash,
             decodedProof,
@@ -187,7 +189,7 @@ export default function Home() {
         <div className="flex flex-col items-center gap-4">
           <p className="text-5xl font-black text-yellow-600 yellow:text-white">DESTINITY</p>
           <SpinningCoin ipfsUrl={coinIpfsUrl} />
-          {/* Ya no necesitamos un flujo separado de autenticación y verificación aquí */}
+          {/* El botón de Verify ya no es necesario aquí */}
           {!isAuthenticated && <div className="w-full max-w-sm"><AuthButton /></div>}
           
           {isAuthenticated && (
@@ -213,4 +215,4 @@ export default function Home() {
       <Page.Footer className="px-0 fixed bottom-0 w-full bg-white z-50"><Navigation /></Page.Footer>
     </Page>
   );
-}
+    }
