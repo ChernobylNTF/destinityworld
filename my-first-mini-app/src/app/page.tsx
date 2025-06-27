@@ -18,10 +18,10 @@ import { MiniKit, getIsUserVerified } from "@worldcoin/minikit-js";
 import { useWaitForTransactionReceipt } from '@worldcoin/minikit-react';
 import { createPublicClient, http, type TransactionReceipt } from 'viem';
 import { worldchain } from 'viem/chains';
-import DWDABI from '@/abi/DWD.json';
+import WorldIdClaimTokenABI from '@/abi/WorldIdClaimToken.json';
 
 // --- Configuración ---
-const DWD_CONTRACT_ADDRESS = '0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0';
+const WorldIdClaimToken_CONTRACT_ADDRESS = '0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0';
 const WORLDCHAIN_RPC_URL = 'https://worldchain-sepolia.g.alchemy.com/public';
 const coinIpfsUrl = "https://gateway.pinata.cloud/ipfs/bafybeielalf3z7q7x7vngejt53qosizddaltox7laqngxjdqhf2vyn6egq";
 const EXPLORER_URL = "https://sepolia.worldscan.org";
@@ -60,8 +60,8 @@ export default function Home() {
     setIsClaimStatusLoading(true);
     try {
       const [lastClaim, claimFrequency] = await Promise.all([
-        publicClient.readContract({ address: DWD_CONTRACT_ADDRESS, abi: DWDABI.abi, functionName: 'lastMint', args: [walletAddress as `0x${string}`] }),
-        publicClient.readContract({ address: DWD_CONTRACT_ADDRESS, abi: DWDABI.abi, functionName: 'CLAIM_FREQUENCY_SECONDS' })
+        publicClient.readContract({ address: WorldIdClaimToken_CONTRACT_ADDRESS, abi: WorldIdClaimTokenABI.abi, functionName: 'lastMint', args: [walletAddress as `0x${string}`] }),
+        publicClient.readContract({ address: WorldIdClaimToken_CONTRACT_ADDRESS, abi: WorldIdClaimTokenABI.abi, functionName: 'CLAIM_FREQUENCY_SECONDS' })
       ]);
       setNextClaimTimestamp(Number(lastClaim) + Number(claimFrequency));
     } catch (err) { console.error("Error al obtener estado de reclamo:", err); }
@@ -130,8 +130,8 @@ export default function Home() {
     try {
       const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
         transaction: [{ 
-          address: DWD_CONTRACT_ADDRESS, 
-          abi: DWDABI.abi as any, 
+          address: WorldIdClaimToken_CONTRACT_ADDRESS, 
+          abi: WorldIdClaimTokenABI.abi as any, 
           functionName: 'claim', 
           args: [] 
         }],
