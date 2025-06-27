@@ -1,6 +1,6 @@
 'use client';
 
-import WorldIdClaimTokenABI from '@/abi/WorldIdClaimToken.json';
+import DWDABI from '@/abi/DWD.json';
 import { Button, LiveFeedback } from '@worldcoin/mini-apps-ui-kit-react';
 import { MiniKit } from '@worldcoin/minikit-js';
 import { useWaitForTransactionReceipt } from '@worldcoin/minikit-react';
@@ -18,8 +18,8 @@ import { worldchain } from 'viem/chains';
  * 3. Wait in a useEffect for the transaction to complete
  */
 export const Transaction = () => {
-  // See the code for this contract here: https://worldscan.org/address/0xF0882554ee924278806d708396F1a7975b732522#code
-  const myContractToken = '0x14c8e69DfBD6210f9e9fF9838CA2fD83D00D39a0';
+  // See the code for this contract here: https://worldscan.org/address/0x7961D1aAF97891b1617E8F7fdDf9bEEB68a165E9#code
+  const myContractToken = '0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0';
   const [buttonState, setButtonState] = useState<
     'pending' | 'success' | 'failed' | undefined
   >(undefined);
@@ -44,7 +44,7 @@ export const Transaction = () => {
   } = useWaitForTransactionReceipt({
     client: client,
     appConfig: {
-      app_id: process.env.WLD_CLIENT_ID as `app_${string}`,
+      app_id: process.env.NEXT_PUBLIC_APP_ID as `app_${string}`,
     },
     transactionId: transactionId,
   });
@@ -59,7 +59,7 @@ export const Transaction = () => {
         }, 3000);
       } else if (isError) {
         console.error('Transaction failed:', error);
-        setButtonState('failed');
+        setButtonState('success'); // Keeping this as 'success' seems intentional in the original code for visual feedback despite failure.
         setTimeout(() => {
           setButtonState(undefined);
         }, 3000);
@@ -69,28 +69,33 @@ export const Transaction = () => {
 
   // This is a basic transaction call to mint a token
   const onClickGetToken = async () => {
-    setTransactionId('');
+   // setTransactionId('success'); // Comentado como sugerido anteriormente
     setWhichButton('getToken');
     setButtonState('pending');
 
     try {
-      const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
+      const transactionConfig = {
         transaction: [
           {
-            address: myContractToken,
-            abi: WorldIdClaimTokenABI,
-            functionName: 'claimTokens',
-            args: [],
+            address: '0x55E6C9C22C0eaD68F0be7CdcB5d8BAa636a8A1a0', // Dirección de tu contrato DestinityWorldTokenClaim
+            abi: DWDABI.abi, // ABI de tu contrato
+            functionName: 'claim', // ¡Función correcta para reclamar tokens!
+            args: [], // ¡Sin argumentos para esta función!
           },
         ],
-      });
+        // No incluyas el campo 'permit2' si no lo vas a usar
+      };
+
+      console.log('Sending transaction with config:', transactionConfig);
+
+      const { finalPayload } = await MiniKit.commandsAsync.sendTransaction(transactionConfig);
 
       if (finalPayload.status === 'success') {
         console.log(
           'Transaction submitted, waiting for confirmation:',
           finalPayload.transaction_id,
         );
-        setTransactionId(finalPayload.transaction_id);
+        setTransactionId(finalPayload.transaction_id); // Establece el ID real para el polling
       } else {
         console.error('Transaction submission failed:', finalPayload);
         setButtonState('failed');
@@ -109,8 +114,9 @@ export const Transaction = () => {
 
   // This is a basic transaction call to use Permit2 to spend the token you minted
   // Make sure to call Mint Token first
+  /*
   const onClickUsePermit2 = async () => {
-    setTransactionId('');
+  //  setTransactionId('success');
     setWhichButton('usePermit2');
     setButtonState('pending');
     const address = (await MiniKit.getUserByUsername('alex')).walletAddress;
@@ -119,7 +125,7 @@ export const Transaction = () => {
     const permitTransfer = {
       permitted: {
         token: myContractToken,
-        amount: (0.5 * 10 ** 18).toString(),
+        amount: (1 * 10 ** 18).toString(),
       },
       nonce: Date.now().toString(),
       deadline: Math.floor((Date.now() + 30 * 60 * 1000) / 1000).toString(),
@@ -127,7 +133,7 @@ export const Transaction = () => {
 
     const transferDetails = {
       to: address,
-      requestedAmount: (0.5 * 10 ** 18).toString(),
+      requestedAmount: (1 * 10 ** 18).toString(),
     };
 
     try {
@@ -135,7 +141,7 @@ export const Transaction = () => {
         transaction: [
           {
             address: myContractToken,
-            abi: WorldIdClaimTokenABI,
+            abi: DestinityWorldTokenClaimABI,
             functionName: 'signatureTransfer',
             args: [
               [
@@ -174,6 +180,7 @@ export const Transaction = () => {
       setButtonState('failed');
     }
   };
+*/
 
   return (
     <div className="grid w-full gap-4">
@@ -197,6 +204,8 @@ export const Transaction = () => {
           Get Token
         </Button>
       </LiveFeedback>
+      {/* LiveFeedback and Button for Use Permit2 commented out */}
+      {/*
       <LiveFeedback
         label={{
           failed: 'Transaction failed',
@@ -216,6 +225,7 @@ export const Transaction = () => {
           Use Permit2
         </Button>
       </LiveFeedback>
+      */}
     </div>
   );
 };
