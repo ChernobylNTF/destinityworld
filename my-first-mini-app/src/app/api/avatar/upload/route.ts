@@ -21,6 +21,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   const pathname = `avatars/${session.user.id}-${file.name}`;
   const blob = await put(pathname, file, {
     access: 'public',
+    allowOverwrite: true,
   });
 
   // 4. Devolver la URL del archivo subido
