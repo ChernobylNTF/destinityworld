@@ -37,7 +37,7 @@ const WalletPage = () => {
 
   // useEffect para buscar el balance cuando la dirección de la billetera esté disponible.
   useEffect(() => {
-    const fetchDwdBalance = async () => {
+    const fetchChrnBalance = async () => {
       if (!walletAddress) {
         setIsLoadingBalance(false);
         return;
