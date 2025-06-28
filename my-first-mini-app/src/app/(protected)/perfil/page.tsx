@@ -1,55 +1,64 @@
 'use client';
 
-import { Page } from '@/components/PageLayout';
-import { UserInfo } from '@/components/UserInfo'; // Asegúrate de que la ruta a UserInfo sea correcta
-import { Button } from '@worldcoin/mini-apps-ui-kit-react';
+import { useState, ChangeEvent, FormEvent } from 'react';
 import { useSession } from 'next-auth/react';
-import { useState, ChangeEvent } from 'react';
+import { Page } from '@/components/PageLayout';
+import { UserInfo } from '@/components/UserInfo';
+import { Button } from '@worldcoin/mini-apps-ui-kit-react';
 
 export default function ProfilePage() {
-  const { data: session, update: updateSession } = useSession(); // Usamos `update` para refrescar la sesión
+  const { data: session, update: updateSession } = useSession();
+
+  // Estados para manejar el formulario de subida
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(session?.user?.profilePictureUrl || null);
   const [status, setStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
 
-  // Se ejecuta cuando el usuario selecciona un archivo
+  // Se actualiza la previsualización cuando el usuario elige un archivo
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
+    if (e.target.files?.[0]) {
       const selectedFile = e.target.files[0];
       setFile(selectedFile);
-      // Creamos una URL local para la previsualización
       setPreview(URL.createObjectURL(selectedFile));
     }
   };
 
-  // Se ejecuta cuando el usuario hace clic en "Guardar Cambios"
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Orquesta la subida y actualización de la foto
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!file) return;
 
     setStatus('uploading');
     setError(null);
 
-    // Usamos FormData para enviar el archivo al backend
-    const formData = new FormData();
-    formData.append('profilePicture', file);
-
     try {
-      const response = await fetch('/api/avatar/upload', {
+      // 1. Subir la imagen
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const uploadResponse = await fetch('/api/avatar/upload', {
         method: 'POST',
         body: formData,
       });
 
-      const data = await response.json();
+      if (!uploadResponse.ok) throw new Error('Error al subir la imagen.');
+      const blob = await uploadResponse.json();
+      const imageUrl = blob.url;
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Algo salió mal.');
-      }
-      
+      // 2. Actualizar la base de datos
+      const updateUserResponse = await fetch('/api/user/update-avatar', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl }),
+      });
+
+      if (!updateUserResponse.ok) throw new Error('Error al actualizar el perfil.');
+
+      // 3. Actualizar la UI
       setStatus('success');
-      // ¡Importante! Refrescamos la sesión para que el UserInfo se actualice con la nueva URL
-      await updateSession({ profilePictureUrl: data.url });
+      await updateSession({ profilePictureUrl: imageUrl });
+      setFile(null); // Resetea el archivo seleccionado
 
     } catch (err: any) {
       setStatus('error');
@@ -59,13 +68,16 @@ export default function ProfilePage() {
 
   return (
     <Page>
+      {/* La cabecera puede seguir mostrando el UserInfo general */}
       <Page.Header className="p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white">
         <UserInfo />
       </Page.Header>
+      
       <Page.Main className="p-6 bg-gradient-to-br from-gray-900 to-blue-900 text-white min-h-screen">
-        <div className="w-full max-w-md">
-          <h1 className="text-3xl font-bold mb-6 text-center">Tu Perfil</h1>
+        <div className="w-full max-w-md mx-auto">
+          <h1 className="text-3xl font-bold mb-6 text-center">Editar Perfil</h1>
           
+          {/* Formulario para cambiar la foto de perfil */}
           <form onSubmit={handleSubmit} className="flex flex-col items-center gap-6 p-6 bg-gray-800 rounded-lg">
             <div className="relative">
               <img
@@ -89,6 +101,7 @@ export default function ProfilePage() {
               />
             </div>
 
+            {/* El botón solo se activa si se ha seleccionado un nuevo archivo */}
             <Button
               type="submit"
               disabled={!file || status === 'uploading'}
@@ -102,8 +115,11 @@ export default function ProfilePage() {
             {status === 'success' && <p className="text-green-400">¡Foto de perfil actualizada!</p>}
             {status === 'error' && <p className="text-red-400">{error}</p>}
           </form>
+
+          {/* Aquí podrías agregar otras secciones de tu perfil */}
+
         </div>
       </Page.Main>
     </Page>
   );
-  }
+}
