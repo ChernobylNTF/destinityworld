@@ -1,26 +1,28 @@
 import { put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
+import { auth } from '@/auth'; // O tu método para obtener la sesión
 
 export async function POST(request: Request): Promise<NextResponse> {
-  const { searchParams } = new URL(request.url);
-  const filename = searchParams.get('filename');
+  // 1. Proteger la ruta
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
 
-  // ⚠️ The below code is for App Router Route Handlers only
-  const blob = await put(filename, request.body, {
+  // 2. Obtener el archivo del FormData
+  const form = await request.formData();
+  const file = form.get('file') as File;
+
+  if (!file) {
+    return NextResponse.json({ error: 'No se encontró ningún archivo.' }, { status: 400 });
+  }
+
+  // 3. Crear un nombre único y subir a Vercel Blob
+  const pathname = `avatars/${session.user.id}-${file.name}`;
+  const blob = await put(pathname, file, {
     access: 'public',
   });
 
-  // Here's the code for Pages API Routes:
-  // const blob = await put(filename, request, {
-  //   access: 'public',
-  // });
-
+  // 4. Devolver la URL del archivo subido
   return NextResponse.json(blob);
 }
-
-// The next lines are required for Pages API Routes only
- export const config = {
-   api: {
-     bodyParser: { sizeLimit: '4mb' }
-   },
- };
