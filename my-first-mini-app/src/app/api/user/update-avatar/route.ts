@@ -25,7 +25,7 @@ export async function PATCH(request: Request) {
       },
       data: {
         // Asegúrate de que el campo en tu modelo se llame 'image' o similar
-        image: imageUrl,
+        profilePictureUrl: imageUrl,
       },
     });
 
