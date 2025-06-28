@@ -56,7 +56,7 @@ const WalletPage = () => {
         
         // Formateamos el balance a un número legible (asumiendo 18 decimales)
         const formattedBalance = formatUnits(balanceBigInt as bigint, 18);
-        setDwdBalance(formattedBalance);
+        setChrnBalance(formattedBalance);
 
       } catch (err) {
         console.error('Error al obtener el balance de CHRN:', err);
@@ -66,7 +66,7 @@ const WalletPage = () => {
       }
     };
 
-    fetchDwdBalance();
+    fetchChrnBalance();
   }, [walletAddress, publicClient]); // Se ejecuta cuando walletAddress o publicClient cambian
 
   // Función para renderizar el contenido del balance
@@ -127,8 +127,8 @@ const WalletPage = () => {
           <div className="flex items-center justify-between p-4 bg-gray-800 border border-gray-700 rounded-lg">
              <div className="flex items-center">
                 {/* Puedes poner un ícono real de tu token aquí */}
-                <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center font-bold mr-4">DWD</div>
-                <span className="text-xl font-bold">CHRN</span>
+                <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center font-bold mr-4">CHRN</div>
+                <span className="text-xl font-bold"></span>
             </div>
             {renderBalance()}
           </div>
