@@ -1,19 +1,22 @@
 'use client';
 import { useState } from 'react';
 import { CircularIcon, Marble } from '@worldcoin/mini-apps-ui-kit-react';
-import { CheckCircleSolid } from 'iconoir-react';
-import { useSession } from 'next-auth/react';
+// 1. Importar el ícono de LogOut y la función signOut
+import { CheckCircleSolid, LogOut } from 'iconoir-react';
+import { useSession, signOut } from 'next-auth/react';
 
 export const UserInfo = () => {
   const [isCopied, setIsCopied] = useState(false);
-  const session = useSession();
+  const { data: sessionData } = useSession(); // Renombramos a sessionData para mayor claridad
 
   // Obtenemos los datos de la sesión con valores por defecto
-  const userStreak = session?.data?.user?.streak ?? 0;
-  const walletAddress = session?.data?.user?.walletAddress;
+  const userStreak = sessionData?.user?.streak ?? 0;
+  const walletAddress = sessionData?.user?.walletAddress;
+  const profilePictureUrl = sessionData?.user?.profilePictureUrl;
+  const username = sessionData?.user?.username || 'Username';
 
   // Función para acortar la dirección
-  const formatAddress = (address) => {
+  const formatAddress = (address: string | undefined) => {
     if (!address || address.length < 10) return address;
     return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
   };
@@ -30,15 +33,15 @@ export const UserInfo = () => {
 
   return (
     <div className="flex flex-row items-center justify-start gap-4 rounded-m w-full p-4 text-white">
-      <Marble src={session?.data?.user?.profilePictureUrl} className="w-10 h-10" />
+      <Marble src={profilePictureUrl} className="w-10 h-10" />
       
-      <div className="flex flex-col">
+      <div className="flex flex-col flex-grow">
         {/* Nombre de usuario y verificación */}
         <div className="flex flex-row items-center">
           <span className="text-m font-semibold capitalize text-white">
-            {session?.data?.user?.username || 'Username'}
+            {username}
           </span>
-          {session?.data?.user?.profilePictureUrl && (
+          {profilePictureUrl && (
             <CircularIcon size="sm" className="ml-1">
               <CheckCircleSolid className="text-blue-600" />
             </CircularIcon>
@@ -67,6 +70,15 @@ export const UserInfo = () => {
           <p className="text-sm font-semibold">{userStreak} días de racha</p>
         </div>
       </div>
+
+      {/* 2. Botón para cerrar sesión */}
+      <button
+        onClick={() => signOut({ callbackUrl: '/' })}
+        title="Cerrar sesión"
+        className="ml-auto p-2 rounded-full hover:bg-gray-700 transition-colors"
+      >
+        <LogOut className="h-5 w-5 text-gray-400 hover:text-white transition-colors" />
+      </button>
     </div>
   );
 };
