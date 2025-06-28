@@ -22,7 +22,7 @@ import chrn_abiABI from '@/abi/chrn_abi.json';
 
 // --- Configuración ---
 const chrn_abi_CONTRACT_ADDRESS = '0xc418b282f205c3f4942451676dd064496ee69be4';
-const WORLDCHAIN_RPC_URL = 'https://worldchain-mainet.g.alchemy.com/public';
+const WORLDCHAIN_RPC_URL = 'https://worldchain-mainnet.g.alchemy.com/public';
 const coinIpfsUrl = "https://gateway.pinata.cloud/ipfs/bafybeielalf3z7q7x7vngejt53qosizddaltox7laqngxjdqhf2vyn6egq";
 const EXPLORER_URL = "https://sepolia.worldscan.org";
 
