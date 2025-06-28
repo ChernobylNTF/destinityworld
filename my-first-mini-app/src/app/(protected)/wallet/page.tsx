@@ -10,13 +10,13 @@ import { createPublicClient, http, formatUnits } from 'viem';
 import { worldchain } from 'viem/chains'; // Usas Worldchain, ¡correcto!
 
 // ABI de tu contrato de token DWD
-import WorldIdClaimTokenABI from '@/abi/WorldIdClaimToken.json'; 
+import chrn_abiABI from '@/abi/chrn_abi.json'; 
 
 // --- Configuración ---
 // Dirección del contrato DWD en Worldchain
-const myContractToken = '0x14c8e69DfBD6210f9e9fF9838CA2fD83D00D39a0'; 
+const myContractToken = '0xC418B282F205C3F4942451676dd064496Ee69bE4'; 
 // RPC público para la red de pruebas de Worldchain (Sepolia)
-const WORLDCHAIN_RPC_URL = 'https://worldchain-sepolia.g.alchemy.com/public';
+const WORLDCHAIN_RPC_URL = 'https://worldchain-mainnet.g.alchemy.com/public';
 
 const WalletPage = () => {
   const { data: session, status: sessionStatus } = useSession();
@@ -25,7 +25,7 @@ const WalletPage = () => {
   // Obtenemos la dirección de la billetera de forma segura desde la sesión de NextAuth.
   const walletAddress = session?.user?.walletAddress;
 
-  const [dwdBalance, setDwdBalance] = useState<string | null>(null);
+  const [chrnBalance, setChrnBalance] = useState<string | null>(null);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,7 +49,7 @@ const WalletPage = () => {
       try {
         const balanceBigInt = await publicClient.readContract({
           address: myContractToken,
-          abi: WorldIdClaimTokenABI.abi,
+          abi: chrn_abiABI as any
           functionName: 'balanceOf',
           args: [walletAddress as `0x${string}`],
         });
@@ -59,7 +59,7 @@ const WalletPage = () => {
         setDwdBalance(formattedBalance);
 
       } catch (err) {
-        console.error('Error al obtener el balance de DWD:', err);
+        console.error('Error al obtener el balance de CHRN:', err);
         setError('No se pudo cargar el balance.');
       } finally {
         setIsLoadingBalance(false);
@@ -77,9 +77,9 @@ const WalletPage = () => {
     if (error) {
       return <span className="text-red-400 text-sm">{error}</span>;
     }
-    if (dwdBalance !== null) {
+    if (chrnBalance !== null) {
       // Usamos toFixed para mostrar un número consistente de decimales
-      return <span className="text-2xl font-bold">{parseFloat(dwdBalance).toFixed(4)}</span>;
+      return <span className="text-2xl font-bold">{parseFloat(chrnBalance).toFixed(4)}</span>;
     }
     return '0.0000';
   };
@@ -128,7 +128,7 @@ const WalletPage = () => {
              <div className="flex items-center">
                 {/* Puedes poner un ícono real de tu token aquí */}
                 <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center font-bold mr-4">DWD</div>
-                <span className="text-xl font-bold">DWD</span>
+                <span className="text-xl font-bold">CHRN</span>
             </div>
             {renderBalance()}
           </div>
