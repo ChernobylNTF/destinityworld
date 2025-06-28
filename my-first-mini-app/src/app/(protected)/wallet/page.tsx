@@ -49,7 +49,7 @@ const WalletPage = () => {
       try {
         const balanceBigInt = await publicClient.readContract({
           address: myContractToken,
-          abi: chrn_abiABI as any
+          abi: chrn_abiABI as any,
           functionName: 'balanceOf',
           args: [walletAddress as `0x${string}`],
         });
