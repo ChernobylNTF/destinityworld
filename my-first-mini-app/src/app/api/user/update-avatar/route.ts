@@ -21,7 +21,7 @@ export async function PATCH(request: Request) {
     // 3. Actualizar la base de datos con Prisma
     await prisma.user.update({
       where: {
-        id: session.user.id,
+        walletAddress: session.user.id,
       },
       data: {
         // Asegúrate de que el campo en tu modelo se llame 'image' o similar
