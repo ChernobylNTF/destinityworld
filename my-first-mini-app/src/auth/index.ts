@@ -1,4 +1,3 @@
-import { hashNonce } from '@/auth/wallet/client-helpers';
 import {
   MiniAppWalletAuthSuccessPayload,
   MiniKit,
@@ -6,31 +5,27 @@ import {
 } from '@worldcoin/minikit-js';
 import NextAuth, { type DefaultSession } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
+import { PrismaClient } from '@prisma/client'; // 1. Importar PrismaClient
 
-// Declaramos los tipos para incluir los nuevos campos
-  export type User = {
-	walletAddress?: string
-	username?: string
-	profilePictureUrl?: string
-	permissions?: {
-		notifications: boolean
-		contacts: boolean
-	}
-	optedIntoOptionalAnalytics?: boolean
-	worldAppVersion?: number
-	deviceOS?: string
+// --- TIPOS (Sin cambios) ---
+export type User = {
+  walletAddress?: string
+  username?: string
+  profilePictureUrl?: string
   streak?: number
-  }
-  
+}
 
-  interface Session {
-    user: {
-      walletAddress?: string;
-      username?: string;
-      profilePictureUrl?: string;
-      streak?: number; 
-    } & DefaultSession['user'];
-  }
+interface Session {
+  user: {
+    walletAddress?: string;
+    username?: string;
+    profilePictureUrl?: string;
+    streak?: number; 
+  } & DefaultSession['user'];
+}
+
+// 2. Crear una instancia de Prisma
+const prisma = new PrismaClient();
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
@@ -38,34 +33,58 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Credentials({
       name: 'World App Wallet',
-      credentials: {
-        nonce: { label: 'Nonce', type: 'text' },
-        signedNonce: { label: 'Signed Nonce', type: 'text' },
-        finalPayloadJson: { label: 'Final Payload', type: 'text' },
-      },
-      authorize: async ({ nonce, signedNonce, finalPayloadJson }: { nonce: string; signedNonce: string; finalPayloadJson: string; }) => {
-        // ... (Tu lógica de verificación existente)
+      credentials: { /* ... */ },
+      authorize: async ({ finalPayloadJson, nonce }: { finalPayloadJson: string; nonce: string; }) => {
+        // --- Verificación (Sin cambios) ---
         const finalPayload: MiniAppWalletAuthSuccessPayload = JSON.parse(finalPayloadJson);
         const result = await verifySiweMessage(finalPayload, nonce);
         if (!result.isValid || !result.siweMessageData.address) {
           return null;
         }
         
-        const userInfo = await MiniKit.getUserInfo(finalPayload.address);
+        const walletAddress = result.siweMessageData.address.toLowerCase();
+        
+        // --- LÓGICA DE BASE DE DATOS (AÑADIDA) ---
+        try {
+          // Obtener información del usuario de Worldcoin
+          const userInfo = await MiniKit.getUserInfo(walletAddress);
 
-        // Aquí conectarías a tu base de datos para obtener la racha del usuario.
-        const userFromYourDb = { streak: 15 }; // Valor de ejemplo
+          // Hacer "upsert" en la base de datos
+          const userInDb = await prisma.user.upsert({
+            where: { walletAddress: walletAddress }, // Buscar por la dirección de la billetera
+            update: {
+              // Si el usuario ya existe, actualizamos su info por si ha cambiado
+              username: userInfo.username,
+              profilePictureUrl: userInfo.profilePictureUrl,
+            },
+            create: {
+              // Si el usuario no existe, lo creamos
+              walletAddress: walletAddress,
+              id: walletAddress, // Usamos la dirección como ID principal también
+              username: userInfo.username,
+              profilePictureUrl: userInfo.profilePictureUrl,
+              streak: 0, // Un nuevo usuario empieza con racha 0
+            },
+          });
 
-        return {
-          id: finalPayload.address,
-          walletAddress: finalPayload.address, // La dirección viene del payload
-          ...userInfo,
-          streak: userFromYourDb.streak, 
-        };
+          // Devolver el usuario de la base de datos para crear la sesión
+          return {
+            id: userInDb.id,
+            walletAddress: userInDb.walletAddress,
+            username: userInDb.username,
+            profilePictureUrl: userInDb.profilePictureUrl,
+            streak: userInDb.streak,
+          };
+
+        } catch (dbError) {
+          console.error("Error de base de datos en authorize:", dbError);
+          return null; // Si hay un error con la BD, no se autoriza
+        }
       },
     }),
   ],
   callbacks: {
+    // --- Callbacks (Sin cambios) ---
     async jwt({ token, user }) {
       if (user) {
         token.userId = user.id;
