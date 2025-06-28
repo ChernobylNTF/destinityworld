@@ -60,8 +60,8 @@ export default function Home() {
     setIsClaimStatusLoading(true);
     try {
       const [lastClaim, claimFrequency] = await Promise.all([
-        publicClient.readContract({ address: chrn_abi_CONTRACT_ADDRESS, abi: chrn_abiABI.abi, functionName: 'lastClaimed', args: [walletAddress as `0x${string}`] }),
-        publicClient.readContract({ address: chrn_abi_CONTRACT_ADDRESS, abi: chrn_abiABI.abi, functionName: 'CLAIM_INTERVAL' })
+        publicClient.readContract({ address: chrn_abi_CONTRACT_ADDRESS, abi: chrn_abiABI as any, functionName: 'lastClaimed', args: [walletAddress as `0x${string}`] }),
+        publicClient.readContract({ address: chrn_abi_CONTRACT_ADDRESS, abi: chrn_abiABI as any, functionName: 'CLAIM_INTERVAL' })
       ]);
       setNextClaimTimestamp(Number(lastClaim) + Number(claimFrequency));
     } catch (err) { console.error("Error al obtener estado de reclamo:", err); }
@@ -131,7 +131,7 @@ export default function Home() {
       const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
         transaction: [{ 
           address: chrn_abi_CONTRACT_ADDRESS, 
-          abi: chrn_abiABI.abi as any, 
+          abi: chrn_abiABI as any, 
           functionName: 'claimDailyToken', 
           args: [] 
         }],
