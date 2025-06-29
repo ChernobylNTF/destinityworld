@@ -2,7 +2,6 @@
 
 import Navigation from '../components/Navigation';
 import { Page } from '@/components/PageLayout';
-import { AuthButton } from '../components/AuthButton';
 import { Verify } from '../components/Verify';
 import { UserInfo } from '../components/UserInfo';
 import { Button } from '@worldcoin/mini-apps-ui-kit-react';
@@ -173,7 +172,6 @@ export default function Home() {
         <div className="flex flex-col items-center gap-4">
           <p className="text-5xl font-black text-yellow-600 yellow:text-white">DESTINITY</p>
           <SpinningCoin ipfsUrl={coinIpfsUrl} />
-          {!isAuthenticated && <div className="w-full max-w-sm"><AuthButton /></div>}
           {isAuthenticated && !isVerified && <div className="w-full max-w-sm"><Verify onSuccess={handleVerificationSuccess} /></div>}
           {isAuthenticated && isVerified && (
             <div className="w-full max-w-sm text-center mt-4">
