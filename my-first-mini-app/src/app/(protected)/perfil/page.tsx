@@ -7,7 +7,7 @@ import { UserInfo } from '@/components/UserInfo';
 import { Button } from '@worldcoin/mini-apps-ui-kit-react';
 
 export default function ProfilePage() {
-  const { data: session, update: updateSession } = useSession();
+  const { data: session } = useSession();
 
   // Estados para manejar el formulario de subida
   const [file, setFile] = useState<File | null>(null);
@@ -24,7 +24,7 @@ export default function ProfilePage() {
     }
   };
 
-  // Orquesta la subida y actualización de la foto
+  // Orquesta la subida y la recarga de la página
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!file) return;
@@ -36,12 +36,10 @@ export default function ProfilePage() {
       // 1. Subir la imagen
       const formData = new FormData();
       formData.append('file', file);
-
       const uploadResponse = await fetch('/api/avatar/upload', {
         method: 'POST',
         body: formData,
       });
-
       if (!uploadResponse.ok) throw new Error('Error al subir la imagen.');
       const blob = await uploadResponse.json();
       const imageUrl = blob.url;
@@ -52,13 +50,14 @@ export default function ProfilePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageUrl }),
       });
-
       if (!updateUserResponse.ok) throw new Error('Error al actualizar el perfil.');
 
-      // 3. Actualizar la UI
+      // 3. Mostrar éxito y forzar recarga
       setStatus('success');
-      await updateSession({ profilePictureUrl: imageUrl });
-      setFile(null); // Resetea el archivo seleccionado
+      
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
 
     } catch (err: any) {
       setStatus('error');
@@ -68,7 +67,6 @@ export default function ProfilePage() {
 
   return (
     <Page>
-      {/* La cabecera puede seguir mostrando el UserInfo general */}
       <Page.Header className="p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white">
         <UserInfo />
       </Page.Header>
@@ -77,7 +75,6 @@ export default function ProfilePage() {
         <div className="w-full max-w-md mx-auto">
           <h1 className="text-3xl font-bold mb-6 text-center">Editar Perfil</h1>
           
-          {/* Formulario para cambiar la foto de perfil */}
           <form onSubmit={handleSubmit} className="flex flex-col items-center gap-6 p-6 bg-gray-800 rounded-lg">
             <div className="relative">
               <img
@@ -101,7 +98,6 @@ export default function ProfilePage() {
               />
             </div>
 
-            {/* El botón solo se activa si se ha seleccionado un nuevo archivo */}
             <Button
               type="submit"
               disabled={!file || status === 'uploading'}
@@ -112,12 +108,9 @@ export default function ProfilePage() {
               {status === 'uploading' ? 'Guardando...' : 'Guardar Cambios'}
             </Button>
             
-            {status === 'success' && <p className="text-green-400">¡Foto de perfil actualizada!</p>}
+            {status === 'success' && <p className="text-green-400">¡Perfil actualizado! La página se recargará...</p>}
             {status === 'error' && <p className="text-red-400">{error}</p>}
           </form>
-
-          {/* Aquí podrías agregar otras secciones de tu perfil */}
-
         </div>
       </Page.Main>
     </Page>
