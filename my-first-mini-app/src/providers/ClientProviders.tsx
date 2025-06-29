@@ -4,7 +4,7 @@ import { Session } from 'next-auth';
 import { SessionProvider, useSession } from 'next-auth/react';
 import type { ReactNode } from 'react';
 import { AuthButton } from '@/components/AuthButton'; 
-import { MiniKitProvider } from '@/providers/MiniKitProvider'; // O la ruta correcta a tu MiniKitProvider
+import  MiniKitProvider  from '@/providers/MiniKitProvider'; // O la ruta correcta a tu MiniKitProvider
 
 // Componente Interno que decide qué mostrar
 function AuthWrapper({ children }: { children: ReactNode }) {
