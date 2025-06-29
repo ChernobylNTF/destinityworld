@@ -102,27 +102,7 @@ const WalletPage = () => {
         />
       </Page.Header>
       <Page.Main className="flex flex-col items-center justify-start gap-8 px-4 py-6 text-white">
-        <div className="w-full max-w-md">
-          <p className="text-lg font-semibold mb-4">Información de la Billetera</p>
-          <div className="flex flex-col gap-3 p-4 bg-gray-800 border border-gray-700 rounded-lg">
-            <div className="text-sm text-gray-400">Dirección Conectada</div>
-            {walletAddress ? (
-              <a
-                href={`https://worldscan.org/address/${walletAddress}`} // Enlace al explorador de Worldchain Sepolia
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-mono text-base text-blue-400 break-words hover:underline"
-                title="Ver en el explorador"
-              >
-                {walletAddress}
-              </a>
-            ) : (
-              <div className="h-6 w-full bg-gray-700 rounded-md animate-pulse"></div>
-            )}
-          </div>
-        </div>
-
-        <div className="w-full max-w-md">
+         <div className="w-full max-w-md">
           <p className="text-lg font-semibold mb-4">Balance de Tokens</p>
           <div className="flex items-center justify-between p-4 bg-gray-800 border border-gray-700 rounded-lg">
              <div className="flex items-center">
