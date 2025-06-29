@@ -55,8 +55,8 @@ export default function Home() {
     transactionId: transactionId,
   });
 
-  const refreshClaimStatus = async () => {
-    if (!walletAddress) return;
+  const refreshClaimStatus = async (address: string) => {
+    if (!address) return;
     setIsClaimStatusLoading(true);
     try {
       const [lastClaim, claimFrequency] = await Promise.all([
@@ -75,7 +75,7 @@ export default function Home() {
           const verificationStatus = await getIsUserVerified();
           if (verificationStatus.isVerified) setIsVerified(true);
         } catch (e) { console.warn("No se pudo comprobar la verificación:", e); }
-        await refreshClaimStatus();
+        await refreshClaimStatus(walletAddress);
       }
     };
     checkStatus();
@@ -88,8 +88,10 @@ export default function Home() {
       setClaimStatus('success');
       setOnChainTxHash(receipt.transactionHash);
       setTimeout(() => {
-        refreshClaimStatus();
-      }, 2000);
+  if (walletAddress) {
+    refreshClaimStatus(walletAddress);
+  }
+}, 2000);
       setTimeout(() => { setClaimStatus('idle'); setTransactionId(''); }, 8000);
     } else if (transactionId && isError) {
       setClaimStatus('error');
