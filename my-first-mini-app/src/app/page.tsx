@@ -55,8 +55,9 @@ export default function Home() {
     transactionId: transactionId,
   });
 
-  const refreshClaimStatus = async (address: string) => {
-    if (!address) return;
+  const refreshClaimStatus = async () => {
+  if (!walletAddress) return;
+  
     setIsClaimStatusLoading(true);
     try {
       const [lastClaim, claimFrequency] = await Promise.all([
@@ -75,7 +76,7 @@ export default function Home() {
           const verificationStatus = await getIsUserVerified();
           if (verificationStatus.isVerified) setIsVerified(true);
         } catch (e) { console.warn("No se pudo comprobar la verificación:", e); }
-        await refreshClaimStatus(walletAddress);
+        await refreshClaimStatus();
       }
     };
     checkStatus();
@@ -88,9 +89,7 @@ export default function Home() {
       setClaimStatus('success');
       setOnChainTxHash(receipt.transactionHash);
       setTimeout(() => {
-  if (walletAddress) {
-    refreshClaimStatus(walletAddress);
-  }
+    refreshClaimStatus();
 }, 2000);
       setTimeout(() => { setClaimStatus('idle'); setTransactionId(''); }, 8000);
     } else if (transactionId && isError) {
@@ -98,7 +97,7 @@ export default function Home() {
       setClaimError('La transacción falló en la red.');
       setTimeout(() => { setClaimStatus('idle'); setTransactionId(''); }, 5000);
     }
-  }, [isConfirming, isConfirmed, isError, receipt, transactionId]);
+  }, [isConfirming, isConfirmed, isError, receipt, transactionId, walletAddress]);
 
   useEffect(() => {
     if (!nextClaimTimestamp) return;
