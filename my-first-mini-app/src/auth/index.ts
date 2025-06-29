@@ -5,26 +5,25 @@ import {
 } from '@worldcoin/minikit-js';
 import NextAuth, { type DefaultSession } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import { PrismaClient } from '@prisma/client'; // 1. Importar PrismaClient
+import { PrismaClient } from '@prisma/client';
 
-// --- TIPOS (Sin cambios) ---
+// TIPOS
 export type User = {
-  walletAddress?: string
-  username?: string
-  profilePictureUrl?: string
-  streak?: number
-}
+  walletAddress?: string;
+  username?: string;
+  profilePictureUrl?: string;
+  streak?: number;
+};
 
 interface Session {
   user: {
     walletAddress?: string;
     username?: string;
     profilePictureUrl?: string;
-    streak?: number; 
+    streak?: number;
   } & DefaultSession['user'];
 }
 
-// 2. Crear una instancia de Prisma
 const prisma = new PrismaClient();
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -33,41 +32,43 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Credentials({
       name: 'World App Wallet',
-      credentials: { /* ... */ },
-      authorize: async ({ finalPayloadJson, nonce }: { finalPayloadJson: string; nonce: string; }) => {
-        // --- Verificación (Sin cambios) ---
+      credentials: {
+        nonce: { label: 'Nonce', type: 'text' },
+        signedNonce: { label: 'Signed Nonce', type: 'text' },
+        finalPayloadJson: { label: 'Final Payload', type: 'text' },
+      },
+      authorize: async ({ finalPayloadJson, nonce }: { finalPayloadJson: string; nonce: string }) => {
         const finalPayload: MiniAppWalletAuthSuccessPayload = JSON.parse(finalPayloadJson);
         const result = await verifySiweMessage(finalPayload, nonce);
+
         if (!result.isValid || !result.siweMessageData.address) {
           return null;
         }
         
         const walletAddress = result.siweMessageData.address.toLowerCase();
         
-        // --- LÓGICA DE BASE DE DATOS (AÑADIDA) ---
         try {
-          // Obtener información del usuario de Worldcoin
           const userInfo = await MiniKit.getUserInfo(walletAddress);
 
-          // Hacer "upsert" en la base de datos
           const userInDb = await prisma.user.upsert({
-            where: { walletAddress: walletAddress }, // Buscar por la dirección de la billetera
+            where: { walletAddress: walletAddress },
+            // --- ESTE ES EL CAMBIO IMPORTANTE ---
             update: {
-              // Si el usuario ya existe, actualizamos su info por si ha cambiado
+              // Si el usuario ya existe, solo actualizamos su username.
+              // NO tocamos el profilePictureUrl para no borrar la foto personalizada.
               username: userInfo.username,
-              profilePictureUrl: userInfo.profilePictureUrl,
             },
             create: {
-              // Si el usuario no existe, lo creamos
+              // Si es un usuario nuevo, guardamos todo.
               walletAddress: walletAddress,
-              id: walletAddress, // Usamos la dirección como ID principal también
+              id: walletAddress,
               username: userInfo.username,
               profilePictureUrl: userInfo.profilePictureUrl,
-              streak: 0, // Un nuevo usuario empieza con racha 0
+              streak: 0,
             },
           });
 
-          // Devolver el usuario de la base de datos para crear la sesión
+          // Devolvemos el usuario que ahora existe en nuestra base de datos
           return {
             id: userInDb.id,
             walletAddress: userInDb.walletAddress,
@@ -78,13 +79,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         } catch (dbError) {
           console.error("Error de base de datos en authorize:", dbError);
-          return null; // Si hay un error con la BD, no se autoriza
+          return null;
         }
       },
     }),
   ],
   callbacks: {
-    // --- Callbacks (Sin cambios) ---
+    // Los callbacks no necesitan cambios
     async jwt({ token, user }) {
       if (user) {
         token.userId = user.id;
