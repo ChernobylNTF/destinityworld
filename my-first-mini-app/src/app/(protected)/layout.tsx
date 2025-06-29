@@ -2,8 +2,8 @@
 
 import Navigation from '@/components/Navigation';
 import { Page } from '@/components/PageLayout';
-import { redirect } from 'next/navigation';
-import { SessionProvider, useSession } from 'next-auth/react'; // Importa useSession
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import React, { useEffect } from 'react';
 import { MiniKit, Permission } from '@worldcoin/minikit-js';
 
@@ -12,46 +12,51 @@ export default function TabsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { data: session, status } = useSession(); // Utiliza el hook useSession
+  const { status } = useSession();
+  const router = useRouter();
 
+  // useEffect para obtener los permisos de Worldcoin
   useEffect(() => {
-    const obtenerPermisos = async () => {
-      try {
-        const payload = await MiniKit.commandsAsync.getPermissions();
-        console.log("Permisos obtenidos:", payload.permissions);
-        const tieneNotificaciones = payload.permissions.some(permiso => permiso === Permission.Notifications);
-        const tieneMicrofono = payload.permissions.some(permiso => permiso === Permission.Microphone);
-        if (!tieneNotificaciones) {
-          console.warn("Permiso de notificaciones no concedido.");
+    // Esta función se ejecuta solo si el usuario está autenticado
+    if (status === "authenticated") {
+      const obtenerPermisos = async () => {
+        try {
+          const payload = await MiniKit.commandsAsync.getPermissions();
+          console.log("Permisos obtenidos en TabsLayout:", payload.permissions);
+          // Aquí puedes guardar o manejar los permisos si es necesario
+        } catch (error) {
+          console.error("Error al obtener los permisos en TabsLayout:", error);
         }
-        if (!tieneMicrofono) {
-          console.warn("Permiso de micrófono no concedido.");
-        }
-      } catch (error) {
-        console.error("Error al obtener los permisos:", error);
-      }
-    };
+      };
 
-    obtenerPermisos();
-  }, []);
+      obtenerPermisos();
+    }
+  }, [status]); // Se ejecuta cuando el estado de la sesión cambia
 
+  // useEffect para manejar la redirección
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push('/'); // Redirige al inicio si no está logueado
+    }
+  }, [status, router]);
+
+  // Muestra un estado de carga mientras se verifica la sesión
   if (status === "loading") {
-    return <div>Cargando sesión...</div>; // O un componente de carga
+    return <div className="flex h-screen w-full items-center justify-center bg-gray-900 text-white">Cargando...</div>;
   }
 
-  if (status === "unauthenticated") {
-    console.log('No autenticado, redirigiendo...');
-    redirect('/');
-  }
-
-  return (
-    <SessionProvider session={session}> {/* La sesión ya está disponible a través del contexto */}
+  // Si está autenticado, muestra la página
+  if (status === "authenticated") {
+    return (
       <Page className="bg-gradient-to-br from-gray-900 to-blue-900 text-white">
         {children}
         <Page.Footer className="px-0 fixed bottom-0 w-full bg-white z-50">
           <Navigation />
         </Page.Footer>
       </Page>
-    </SessionProvider>
-  );
+    );
+  }
+
+  // Mientras no esté autenticado (y antes de redirigir), no muestra nada
+  return null;
 }
