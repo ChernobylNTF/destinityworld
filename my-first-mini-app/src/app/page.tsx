@@ -8,7 +8,11 @@ import { Button } from '@worldcoin/mini-apps-ui-kit-react';
 import { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+
+// Importar el componente de la moneda 3D
 import SpinningCoin from '../components/SpinningCoin';
+
+// --- LÓGICA DE BLOCKCHAIN ---
 import { MiniKit, getIsUserVerified } from "@worldcoin/minikit-js";
 import { useWaitForTransactionReceipt } from '@worldcoin/minikit-react';
 import { createPublicClient, http, type TransactionReceipt } from 'viem';
@@ -22,15 +26,12 @@ const coinIpfsUrl = "https://gateway.pinata.cloud/ipfs/bafybeielalf3z7q7x7vngejt
 const EXPLORER_URL = "https://sepolia.worldscan.org";
 
 export default function Home() {
-  // Obtenemos la sesión, pero ya no la usamos para mostrar/ocultar el login
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const isAuthenticated = status === 'authenticated';
   const walletAddress = session?.user?.walletAddress;
 
-  // ESTADOS: para verificación y para el reclamo de tokens
   const [isVerified, setIsVerified] = useState(false);
-  const [isLoadingVerification, setIsLoadingVerification] = useState(true);
   const [claimError, setClaimError] = useState<string | null>(null);
-  // ... resto de tus estados ...
   const [claimStatus, setClaimStatus] = useState<'idle' | 'sending' | 'confirming' | 'success' | 'error'>('idle');
   const [nextClaimTimestamp, setNextClaimTimestamp] = useState<number | null>(null);
   const [countdown, setCountdown] = useState('');
@@ -38,10 +39,7 @@ export default function Home() {
   const [onChainTxHash, setOnChainTxHash] = useState<string>('');
   const [isClaimStatusLoading, setIsClaimStatusLoading] = useState(true);
 
-
-  // LÓGICA DE BLOCKCHAIN Y USEEFFECTS (Toda tu lógica original se mantiene aquí)
-  // ... publicClient, useWaitForTransactionReceipt, refreshClaimStatus, handleClaimTokens, etc. ...
-    const publicClient = useMemo(() => createPublicClient({
+  const publicClient = useMemo(() => createPublicClient({
     chain: worldchain, transport: http(WORLDCHAIN_RPC_URL),
   }), []);
 
@@ -72,20 +70,16 @@ export default function Home() {
 
   useEffect(() => {
     const checkStatus = async () => {
-      if (walletAddress) {
-        setIsLoadingVerification(true);
+      if (isAuthenticated && walletAddress) {
         try {
           const verificationStatus = await getIsUserVerified();
-          setIsVerified(verificationStatus.isVerified);
-          if (verificationStatus.isVerified) {
-            await refreshClaimStatus();
-          }
+          if (verificationStatus.isVerified) setIsVerified(true);
         } catch (e) { console.warn("No se pudo comprobar la verificación:", e); }
-        finally { setIsLoadingVerification(false); }
+        await refreshClaimStatus();
       }
     };
     checkStatus();
-  }, [walletAddress]);
+  }, [isAuthenticated, walletAddress]);
 
   useEffect(() => {
     if (transactionId && isConfirming) {
@@ -94,8 +88,8 @@ export default function Home() {
       setClaimStatus('success');
       setOnChainTxHash(receipt.transactionHash);
       setTimeout(() => {
-        if(walletAddress) refreshClaimStatus();
-      }, 2000);
+    refreshClaimStatus();
+}, 2000);
       setTimeout(() => { setClaimStatus('idle'); setTransactionId(''); }, 8000);
     } else if (transactionId && isError) {
       setClaimStatus('error');
@@ -123,9 +117,53 @@ export default function Home() {
   }, [nextClaimTimestamp]);
   
   const handleVerificationSuccess = () => setIsVerified(true);
-    const handleClaimTokens = async () => { /* ... tu función ... */ };
-    const renderClaimSection = () => { /* ... tu función ... */ };
 
+  // --- FUNCIÓN DE RECLAMO CORREGIDA FINAL ---
+  const handleClaimTokens = async () => {
+    const canClaim = !isClaimStatusLoading && (!nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000));
+    if (!canClaim || claimStatus !== 'idle') return;
+
+    setClaimStatus('sending');
+    setClaimError(null);
+    setOnChainTxHash('');
+
+    try {
+      const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
+        transaction: [{ 
+          address: chrn_abi_CONTRACT_ADDRESS, 
+          abi: chrn_abiABI as any, 
+          functionName: 'claimDailyToken', 
+          args: [] 
+        }],
+        // Se omite el payload de 'permit2' para la función `claim`,
+        // ya que esto parece ser la causa del error "invalid_token".
+      });
+
+      if (finalPayload.status === 'success' && finalPayload.transaction_id) {
+        setTransactionId(finalPayload.transaction_id);
+      } else {
+        throw new Error(finalPayload.error_code ?? 'Transacción rechazada en MiniKit.');
+      }
+    } catch (err: any) {
+      console.error("Error al iniciar el reclamo:", err);
+      setClaimError(err.message || "La transacción fue rechazada.");
+      setClaimStatus('idle');
+    }
+  };
+  
+  const canClaim = !isClaimStatusLoading && (!nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000));
+
+  const renderClaimSection = () => {
+    if (isClaimStatusLoading) {
+      return <div><p>Verificando estado del reclamo...</p></div>;
+    }
+    if (canClaim) {
+      const buttonText = claimStatus === 'sending' ? 'Enviando...' : claimStatus === 'confirming' ? 'Confirmando...' : 'Reclamar Tokens';
+      return <Button onClick={handleClaimTokens} disabled={claimStatus !== 'idle'} size="lg" variant="primary" className="w-full">{buttonText}</Button>;
+    } else {
+      return <div><p>Próximo reclamo en:</p><p className="text-xl font-bold">{countdown || '...'}</p></div>;
+    }
+  };
 
   return (
     <Page>
@@ -134,22 +172,32 @@ export default function Home() {
         <div className="flex flex-col items-center gap-4">
           <p className="text-5xl font-black text-yellow-600 yellow:text-white">DESTINITY</p>
           <SpinningCoin ipfsUrl={coinIpfsUrl} />
-
-          {/* ESTA ES LA ÚNICA LÓGICA CONDICIONAL QUE QUEDA AQUÍ */}
-          {isLoadingVerification ? (
-            <p>Verificando...</p>
-          ) : isVerified ? (
+          {isAuthenticated && !isVerified && <div className="w-full max-w-sm"><Verify onSuccess={handleVerificationSuccess} /></div>}
+          {isAuthenticated && isVerified && (
             <div className="w-full max-w-sm text-center mt-4">
               {renderClaimSection()}
-              {/* ... resto de tu UI de reclamo ... */}
+              <div className="h-10 mt-2 text-sm flex flex-col items-center justify-center">
+                {claimStatus === 'error' && <p className="text-red-400">{claimError}</p>}
+                {claimStatus === 'success' && (
+                  <div className="text-center">
+                    <p className="text-green-400">¡Tokens reclamados con éxito!</p>
+                    {onChainTxHash && (
+                      <Link href={`${EXPLORER_URL}/tx/${onChainTxHash}`} target="_blank" className="text-blue-400 hover:underline text-xs">
+                        Ver transacción
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
-          ) : (
-            <div className="w-full max-w-sm"><Verify onSuccess={handleVerificationSuccess} /></div>
           )}
-
         </div>
       </Page.Main>
       <Page.Footer className="px-0 fixed bottom-0 w-full bg-white z-50"><Navigation /></Page.Footer>
     </Page>
   );
+}
+
+declare module '../components/Verify' {
+  export const Verify: ({ onSuccess }: { onSuccess: () => void }) => JSX.Element;
 }
