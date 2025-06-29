@@ -1,44 +1,42 @@
 'use client';
-
+import { MiniKitProvider } from '@worldcoin/minikit-js/minikit-provider';
 import { Session } from 'next-auth';
-import { SessionProvider, useSession } from 'next-auth/react';
+import { SessionProvider } from 'next-auth/react';
+import dynamic from 'next/dynamic';
 import type { ReactNode } from 'react';
-import { AuthButton } from '@/components/AuthButton'; 
-import  MiniKitProvider  from '@/providers'; // O la ruta correcta a tu MiniKitProvider
 
-// Componente Interno que decide qué mostrar
-function AuthWrapper({ children }: { children: ReactNode }) {
-  const { status } = useSession();
+const ErudaProvider = dynamic(
+  () => import('@/providers/Eruda').then((c) => c.ErudaProvider),
+  { ssr: false },
+);
 
-  // Muestra un estado de carga para evitar parpadeos
-  if (status === 'loading') {
-    return <div className="flex items-center justify-center h-screen bg-gray-900 text-white">Cargando...</div>;
-  }
-
-  // Muestra el botón de login si el usuario NO está autenticado
-  if (status === 'unauthenticated') {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-900">
-        <AuthButton />
-      </div>
-    );
-  }
-
-  // Solo si está autenticado, muestra el contenido de la página
-  return <>{children}</>;
-}
-
+// Define props for ClientProviders
 interface ClientProvidersProps {
   children: ReactNode;
-  session: Session | null;
+  session: Session | null; // Use the appropriate type for session from next-auth
 }
 
-export default function ClientProviders({ children, session }: ClientProvidersProps) {
+/**
+ * ClientProvider wraps the app with essential context providers.
+ *
+ * - ErudaProvider:
+ *     - Should be used only in development.
+ *     - Enables an in-browser console for logging and debugging.
+ *
+ * - MiniKitProvider:
+ *     - Required for MiniKit functionality.
+ *
+ * This component ensures both providers are available to all child components.
+ */
+export default function ClientProviders({
+  children,
+  session,
+}: ClientProvidersProps) {
   return (
-    <SessionProvider session={session}>
+    <ErudaProvider>
       <MiniKitProvider>
-        <AuthWrapper>{children}</AuthWrapper>
+        <SessionProvider session={session}>{children}</SessionProvider>
       </MiniKitProvider>
-    </SessionProvider>
+    </ErudaProvider>
   );
 }
