@@ -4,13 +4,13 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import clsx from 'clsx';
 // Usaremos íconos de la librería 'iconoir-react' que ya tienes en tu proyecto
-import { Home, Wallet, SafeLock, Leaderboard, User, InfoCircle } from 'iconoir-react';
+import { Home, Wallet, Vault, Leaderboard, User, InfoCircle } from 'iconoir-react';
 
 // Definimos los elementos de la navegación en un array para un código más limpio
 const navItems = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/wallet', label: 'Wallet', icon: Wallet },
-  { href: '/staking', label: 'Staking', icon: SafeLock },
+  { href: '/staking', label: 'Staking', icon: Vault },
   { href: '/ranking', label: 'Ranking', icon: Leaderboard },
   { href: '/perfil', label: 'Perfil', icon: User },
   { href: '/info', label: 'Info', icon: InfoCircle },
