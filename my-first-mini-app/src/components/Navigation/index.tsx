@@ -22,7 +22,7 @@ export default function Navigation() {
   return (
     // La barra de navegación ahora tiene un fondo un poco más oscuro
     <div className="w-full bg-gray-900 border-t border-gray-700">
-      <nav className="flex items-center justify-around max-w-lg mx-auto h-16">
+      <nav className="flex items-center justify-around max-w-lg mx-auto h-10">
         {navItems.map((item) => {
           // Comprobamos si el enlace actual es la página activa
           const isActive = pathname === item.href;
@@ -34,7 +34,7 @@ export default function Navigation() {
               href={item.href}
               className={clsx(
                 // Clases base para todos los botones
-                'flex flex-col items-center justify-center gap-1 w-12 h-12 rounded-full transition-all duration-300 ease-in-out',
+                'flex flex-col items-center justify-center gap-1 w-8 h-8 rounded-full transition-all duration-300 ease-in-out',
                 {
                   // Clases especiales solo para el botón ACTIVO
                   'bg-blue-600 text-white scale-110 shadow-lg shadow-blue-500/30': isActive,
