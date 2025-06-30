@@ -16,8 +16,6 @@ import erc20Abi from '@/abi/erc20_abi.json';
 const WORLDCHAIN_RPC_URL = 'https://worldchain-mainnet.g.alchemy.com/public';
 
 // --- Configuración de Tokens ---
-// Aquí defines todos los tokens que quieres mostrar.
-// Asegúrate de que las direcciones y logos sean correctos.
 const tokenConfig = [
   {
     symbol: 'CHRN',
@@ -66,30 +64,32 @@ const WalletPage = () => {
       setError(null);
 
       try {
-        // Creamos una promesa para cada llamada de balance
         const balancePromises = tokenConfig.map(token =>
           publicClient.readContract({
             address: token.contractAddress as `0x${string}`,
-            abi: erc20Abi as any, // Usamos el ABI genérico para todos
+            abi: erc20Abi as any,
             functionName: 'balanceOf',
             args: [walletAddress],
           })
         );
 
-        // Ejecutamos todas las promesas en paralelo
-        const results = await Promise.all(balancePromises);
+        const results = await Promise.allSettled(balancePromises);
 
-        // Procesamos los resultados
         const newBalances: Record<string, string> = {};
-        results.forEach((balance, index) => {
+        results.forEach((result, index) => {
           const token = tokenConfig[index];
-          const formattedBalance = formatUnits(balance as bigint, token.decimals);
-          newBalances[token.symbol] = formattedBalance;
+          if (result.status === 'fulfilled') {
+            const formattedBalance = formatUnits(result.value as bigint, token.decimals);
+            newBalances[token.symbol] = formattedBalance;
+          } else {
+            console.error(`Error al obtener el balance de ${token.symbol}:`, result.reason);
+            newBalances[token.symbol] = '0'; 
+          }
         });
 
         setBalances(newBalances);
       } catch (err) {
-        console.error('Error al obtener los balances:', err);
+        console.error('Error general al obtener los balances:', err);
         setError('No se pudieron cargar los balances.');
       } finally {
         setIsLoading(false);
@@ -110,17 +110,18 @@ const WalletPage = () => {
       return '#';
     }
 
-    // Convertimos el monto a su unidad mínima (wei) para la URL
     const amountInWei = parseUnits(fromAmount as `${number}`, fromTokenData.decimals);
-
+    
+    const baseUrl = 'https://worldcoin.org/mini-app';
     const params = new URLSearchParams({
-      tab: 'swap',
-      fromToken: fromTokenData.contractAddress,
-      toToken: toTokenData.contractAddress,
-      amount: amountInWei.toString(),
+        app_id: UNO_APP_ID,
+        tab: 'swap',
+        fromToken: fromTokenData.contractAddress,
+        toToken: toTokenData.contractAddress,
+        amount: amountInWei.toString(),
     });
 
-    return `https://world.org/app/${UNO_APP_ID}?${params.toString()}`;
+    return `${baseUrl}?${params.toString()}`;
   };
 
   // --- Componente para renderizar la fila de un token ---
