@@ -21,7 +21,7 @@ const WORLDCHAIN_RPC_URL = 'https://worldchain-mainnet.g.alchemy.com/public';
 const tokenConfig = [
   {
     symbol: 'CHRN',
-    name: 'Chronos',
+    name: 'Chernobyl',
     contractAddress: '0xC418B282F205C3F4942451676dd064496Ee69bE4',
     logo: '/chrn-logo.png',
     decimals: 18,
