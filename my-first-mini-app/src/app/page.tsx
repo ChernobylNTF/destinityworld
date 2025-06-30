@@ -168,7 +168,7 @@ export default function Home() {
   return (
     <Page>
       <Page.Header className="p-0 bg-gradient-to-br from-gray-900 to-blue-900 text-white"><UserInfo /></Page.Header>
-      <Page.Main className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white min-h-screen">
+      <Page.Main className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white min-h-screen pb-20">
         <div className="flex flex-col items-center gap-4">
           <p className="text-5xl font-black text-yellow-600 yellow:text-white">DESTINITY</p>
           <SpinningCoin ipfsUrl={coinIpfsUrl} />
