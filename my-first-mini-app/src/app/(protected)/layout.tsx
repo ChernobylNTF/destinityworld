@@ -50,7 +50,7 @@ export default function TabsLayout({
     return (
       <Page className="bg-gradient-to-br from-gray-900 to-blue-900 text-white">
         {children}
-        <Page.Footer className="px-0 fixed bottom-0 w-full bg-white z-50">
+        <Page.Footer className="px-0 fixed bottom-0 w-full bg-gray-900 z-50">
           <Navigation />
         </Page.Footer>
       </Page>
