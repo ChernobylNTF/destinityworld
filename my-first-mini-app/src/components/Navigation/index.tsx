@@ -22,7 +22,7 @@ export default function Navigation() {
   return (
     // La barra de navegación ahora tiene un fondo un poco más oscuro
     <div className="w-full">
-      <nav className="flex items-end justify-around max-w-lg mx-auto h-0 pb-1">
+      <nav className="flex items-end justify-around max-w-lg mx-auto h-0 pb-1 py-1">
         {navItems.map((item) => {
           // Comprobamos si el enlace actual es la página activa
           const isActive = pathname === item.href;
