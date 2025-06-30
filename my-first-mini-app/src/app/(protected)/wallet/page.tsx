@@ -29,7 +29,7 @@ const tokenConfig = [
   {
     symbol: 'WLD',
     name: 'Worldcoin',
-    contractAddress: '0x163f8C2467924be0ae7B5347228CABF260318753',
+    contractAddress: '0x2cFc85d8E48F8EAB294be644d9E25C3030863003',
     logo: '/wld-logo.png',
     decimals: 18,
   },
