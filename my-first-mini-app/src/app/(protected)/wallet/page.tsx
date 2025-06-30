@@ -3,85 +3,140 @@
 import { Page } from '@/components/PageLayout';
 import { TopBar, Marble } from '@worldcoin/mini-apps-ui-kit-react';
 import { useSession } from 'next-auth/react';
-import { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 
 // VIEM para interactuar con la Blockchain
-import { createPublicClient, http, formatUnits } from 'viem';
-import { worldchain } from 'viem/chains'; // Usas Worldchain, ¡correcto!
+import { createPublicClient, http, formatUnits, parseUnits } from 'viem';
+import { worldchain } from 'viem/chains';
 
-// ABI de tu contrato de token DWD
-import chrn_abiABI from '@/abi/chrn_abi.json'; 
+// ABI genérico para tokens ERC20 estándar
+import erc20Abi from '@/abi/erc20_abi.json';
 
 // --- Configuración ---
-// Dirección del contrato DWD en Worldchain
-const myContractToken = '0xC418B282F205C3F4942451676dd064496Ee69bE4'; 
-// RPC público para la red de pruebas de Worldchain (Sepolia)
 const WORLDCHAIN_RPC_URL = 'https://worldchain-mainnet.g.alchemy.com/public';
 
+// --- Configuración de Tokens ---
+// Aquí defines todos los tokens que quieres mostrar.
+// Asegúrate de que las direcciones y logos sean correctos.
+const tokenConfig = [
+  {
+    symbol: 'CHRN',
+    name: 'Chronos',
+    contractAddress: '0xC418B282F205C3F4942451676dd064496Ee69bE4',
+    logo: '/chrn-logo.png',
+    decimals: 18,
+  },
+  {
+    symbol: 'WLD',
+    name: 'Worldcoin',
+    contractAddress: '0x163f8C2467924be0ae7B5347228CABF260318753',
+    logo: '/wld-logo.png',
+    decimals: 18,
+  },
+];
+
+// --- Componente de la Billetera ---
 const WalletPage = () => {
-  const { data: session, status: sessionStatus } = useSession();
+  const { data: session } = useSession();
+  const walletAddress = session?.user?.walletAddress as `0x${string}` | undefined;
 
-  // --- CORRECCIÓN CRÍTICA ---
-  // Obtenemos la dirección de la billetera de forma segura desde la sesión de NextAuth.
-  const walletAddress = session?.user?.walletAddress;
-
-  const [chrnBalance, setChrnBalance] = useState<string | null>(null);
-  const [isLoadingBalance, setIsLoadingBalance] = useState(true);
+  const [balances, setBalances] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Usamos `useMemo` para crear el cliente de viem solo una vez y evitar recrearlo en cada render.
+  // Estados para el Swap
+  const [fromToken, setFromToken] = useState(tokenConfig[0].symbol);
+  const [toToken, setToToken] = useState(tokenConfig[1].symbol);
+  const [fromAmount, setFromAmount] = useState('');
+
+  // Cliente de Viem para leer datos de la blockchain
   const publicClient = useMemo(() => createPublicClient({
     chain: worldchain,
     transport: http(WORLDCHAIN_RPC_URL),
   }), []);
 
-  // useEffect para buscar el balance cuando la dirección de la billetera esté disponible.
+  // --- Lógica para obtener balances REALES ---
   useEffect(() => {
-    const fetchChrnBalance = async () => {
+    const fetchAllBalances = async () => {
       if (!walletAddress) {
-        setIsLoadingBalance(false);
+        setIsLoading(false);
         return;
       }
-      
-      setIsLoadingBalance(true);
+      setIsLoading(true);
       setError(null);
 
       try {
-        const balanceBigInt = await publicClient.readContract({
-          address: myContractToken,
-          abi: chrn_abiABI as any,
-          functionName: 'balanceOf',
-          args: [walletAddress as `0x${string}`],
-        });
-        
-        // Formateamos el balance a un número legible (asumiendo 18 decimales)
-        const formattedBalance = formatUnits(balanceBigInt as bigint, 18);
-        setChrnBalance(formattedBalance);
+        // Creamos una promesa para cada llamada de balance
+        const balancePromises = tokenConfig.map(token =>
+          publicClient.readContract({
+            address: token.contractAddress as `0x${string}`,
+            abi: erc20Abi as any, // Usamos el ABI genérico para todos
+            functionName: 'balanceOf',
+            args: [walletAddress],
+          })
+        );
 
+        // Ejecutamos todas las promesas en paralelo
+        const results = await Promise.all(balancePromises);
+
+        // Procesamos los resultados
+        const newBalances: Record<string, string> = {};
+        results.forEach((balance, index) => {
+          const token = tokenConfig[index];
+          const formattedBalance = formatUnits(balance as bigint, token.decimals);
+          newBalances[token.symbol] = formattedBalance;
+        });
+
+        setBalances(newBalances);
       } catch (err) {
-        console.error('Error al obtener el balance de CHRN:', err);
-        setError('No se pudo cargar el balance.');
+        console.error('Error al obtener los balances:', err);
+        setError('No se pudieron cargar los balances.');
       } finally {
-        setIsLoadingBalance(false);
+        setIsLoading(false);
       }
     };
 
-    fetchChrnBalance();
-  }, [walletAddress, publicClient]); // Se ejecuta cuando walletAddress o publicClient cambian
+    fetchAllBalances();
+  }, [walletAddress, publicClient]);
 
-  // Función para renderizar el contenido del balance
-  const renderBalance = () => {
-    if (isLoadingBalance) {
-      return <div className="h-7 w-28 bg-gray-700 rounded-md animate-pulse"></div>;
+  // --- Función para generar la URL del Quick Action de UNO ---
+  const getUnoSwapUrl = () => {
+    const UNO_APP_ID = 'app_a4f7f3e62c1de0b9490a5260cb390b56';
+    
+    const fromTokenData = tokenConfig.find(t => t.symbol === fromToken);
+    const toTokenData = tokenConfig.find(t => t.symbol === toToken);
+    
+    if (!fromTokenData || !toTokenData || !fromAmount || parseFloat(fromAmount) <= 0) {
+      return '#';
     }
-    if (error) {
-      return <span className="text-red-400 text-sm">{error}</span>;
-    }
-    if (chrnBalance !== null) {
-      // Usamos toFixed para mostrar un número consistente de decimales
-      return <span className="text-2xl font-bold">{parseFloat(chrnBalance).toFixed(4)}</span>;
-    }
-    return '0.0000';
+
+    // Convertimos el monto a su unidad mínima (wei) para la URL
+    const amountInWei = parseUnits(fromAmount as `${number}`, fromTokenData.decimals);
+
+    const params = new URLSearchParams({
+      tab: 'swap',
+      fromToken: fromTokenData.contractAddress,
+      toToken: toTokenData.contractAddress,
+      amount: amountInWei.toString(),
+    });
+
+    return `https://world.org/app/${UNO_APP_ID}?${params.toString()}`;
+  };
+
+  // --- Componente para renderizar la fila de un token ---
+  const TokenBalanceRow = ({ token }: { token: typeof tokenConfig[0] }) => {
+    const balance = balances[token.symbol];
+    const displayBalance = balance ? parseFloat(balance).toFixed(4) : '0.0000';
+
+    return (
+      <div className="flex items-center justify-between p-4 bg-gray-800 border border-gray-700 rounded-lg">
+        <div className="flex items-center">
+          <img src={token.logo} alt={`Logo de ${token.name}`} className="w-10 h-10 rounded-full mr-4" onError={(e) => { (e.currentTarget as HTMLImageElement).src = `https://placehold.co/40x40/8B5CF6/FFFFFF?text=${token.symbol.charAt(0)}`; }} />
+          <span className="text-xl font-bold">{token.symbol}</span>
+        </div>
+        {isLoading ? <div className="h-7 w-28 bg-gray-700 rounded-md animate-pulse"></div> : <span className="text-2xl font-bold">{displayBalance}</span>}
+      </div>
+    );
   };
 
   return (
@@ -90,37 +145,60 @@ const WalletPage = () => {
         <TopBar
           title="Wallet"
           endAdornment={
-            sessionStatus === 'authenticated' && (
+            session?.user && (
               <div className="flex items-center gap-2 pr-2">
                 <p className="text-sm font-semibold capitalize text-white">
                   {session.user.username}
                 </p>
-                <Marble src={session.user.profilePictureUrl} className="w-8 h-8" />
+                <Marble src={session.user.profilePictureUrl} className="w-8 h-8 rounded-full" />
               </div>
             )
           }
         />
       </Page.Header>
-      <Page.Main className="flex flex-col items-center justify-start gap-8 px-4 py-6 text-white">
-         <div className="w-full max-w-md">
-          <p className="text-lg font-semibold mb-4">Balance de Tokens</p>
-          <div className="flex items-center justify-between p-4 bg-gray-800 border border-gray-700 rounded-lg">
-             <div className="flex items-center">
-    <img
-      src="/chrn-logo.png" // Asegúrate de que esta ruta sea correcta.
-      alt="Logo del token CHRN"
-      className="w-10 h-10 rounded-full mr-4"
-      // Este evento se dispara si la imagen no se encuentra, mostrando un placeholder.
-      onError={(e) => {
-        const target = e.target as HTMLImageElement;
-        target.onerror = null;
-        target.src='https://placehold.co/40x40/8B5CF6/FFFFFF?text=CHRN';
-      }}
-    />
-    {/* He agregado el nombre del token aquí para mayor claridad */}
-    <span className="text-xl font-bold">CHRN</span>
-</div>
-            {renderBalance()}
+      <Page.Main className="flex flex-col items-center justify-start gap-12 px-4 py-6 text-white">
+        {/* Sección de Balances */}
+        <div className="w-full max-w-md">
+          <p className="text-lg font-semibold mb-4">Mis Tokens</p>
+          <div className="flex flex-col gap-4">
+            {tokenConfig.map((token) => <TokenBalanceRow key={token.symbol} token={token} />)}
+            {error && <span className="text-red-400 text-sm text-center">{error}</span>}
+          </div>
+        </div>
+
+        {/* Sección de Intercambio (Swap) con Quick Action */}
+        <div className="w-full max-w-md">
+          <p className="text-lg font-semibold mb-4">Intercambio</p>
+          <div className="flex flex-col gap-4 p-4 bg-gray-900 rounded-lg">
+            <div className="flex gap-4">
+              <input 
+                type="number"
+                placeholder="0.0"
+                className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-xl w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={fromAmount}
+                onChange={(e) => setFromAmount(e.target.value)}
+              />
+              <select value={fromToken} onChange={(e) => setFromToken(e.target.value)} className="bg-gray-800 border border-gray-700 text-white font-bold py-2 px-3 rounded-lg focus:outline-none">
+                {tokenConfig.map(t => <option key={t.symbol} value={t.symbol}>{t.symbol}</option>)}
+              </select>
+            </div>
+            
+            <div className="flex items-center gap-4">
+                <span className="text-gray-400">Para:</span>
+                <select value={toToken} onChange={(e) => setToToken(e.target.value)} className="bg-gray-800 border border-gray-700 text-white font-bold py-2 px-3 rounded-lg focus:outline-none w-full">
+                    {tokenConfig.filter(t => t.symbol !== fromToken).map(t => <option key={t.symbol} value={t.symbol}>{t.symbol}</option>)}
+                </select>
+            </div>
+            
+            <a 
+                href={getUnoSwapUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg mt-2 transition-opacity ${(!fromAmount || parseFloat(fromAmount) <= 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={(e) => { if (!fromAmount || parseFloat(fromAmount) <= 0) e.preventDefault(); }}
+            >
+                Intercambiar con UNO
+            </a>
           </div>
         </div>
       </Page.Main>
