@@ -106,12 +106,8 @@ const WalletPage = () => {
           <p className="text-lg font-semibold mb-4">Balance de Tokens</p>
           <div className="flex items-center justify-between p-4 bg-gray-800 border border-gray-700 rounded-lg">
              <div className="flex items-center">
-    {/* AQUÍ VA TU LOGO:
-      1. Coloca tu archivo de logo (ej. chrn-logo.svg) en la carpeta `public` de tu proyecto.
-      2. La etiqueta `img` de abajo cargará tu logo.
-    */}
     <img
-      src="/chrn-logo.svg" // Asegúrate de que esta ruta sea correcta.
+      src="/chrn-logo.png" // Asegúrate de que esta ruta sea correcta.
       alt="Logo del token CHRN"
       className="w-10 h-10 rounded-full mr-4"
       // Este evento se dispara si la imagen no se encuentra, mostrando un placeholder.
