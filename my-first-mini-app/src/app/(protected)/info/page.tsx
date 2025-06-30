@@ -28,7 +28,7 @@ const InfoPage = () => {
           <p className="text-lg font-semibold">Información de la Aplicación</p>
           <div className="p-4 border border-gray-700 rounded-lg">
             <p>Bienvenido a Destinity.</p>
-            <p>Inicia sección todos los dias y acumula token DWD.</p>
+            <p>Inicia sección todos los dias y acumula token CHRN. La fecha del Lanzamiento oficial del token DWD estara disponible muy pronto podras cambiar tus CHRN/DWD</p>
             <br />
             <p>
               <strong>AIRDROP:</strong> Preparate para recibir nuestro Airdrop, completa tareas y sigue nuestras redes
