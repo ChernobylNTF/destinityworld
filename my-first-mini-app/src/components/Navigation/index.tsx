@@ -34,7 +34,7 @@ export default function Navigation() {
               href={item.href}
               className={clsx(
                 // Clases base para todos los botones
-                'flex flex-col items-center justify-center gap-1 w-16 h-16 rounded-full transition-all duration-300 ease-in-out',
+                'flex flex-col items-center justify-center gap-1 w-12 h-12 rounded-full transition-all duration-300 ease-in-out',
                 {
                   // Clases especiales solo para el botón ACTIVO
                   'bg-blue-600 text-white scale-110 shadow-lg shadow-blue-500/30': isActive,
