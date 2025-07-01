@@ -1,6 +1,6 @@
 'use client';
 import { walletAuth } from '@/auth/wallet';
-import { Button, LiveFeedback } from '@worldcoin/mini-apps-ui-kit-react';
+import { Button } from '@worldcoin/mini-apps-ui-kit-react';
 import { useMiniKit } from '@worldcoin/minikit-js/minikit-provider';
 import { useCallback, useState } from 'react';
 
@@ -18,32 +18,22 @@ export const AuthButton = () => {
     } catch (error) {
       console.error('Wallet authentication button error', error);
       setIsPending(false);
-      return;
     }
-    // No es necesario setIsPending(false) aquí, porque la página cambiará de estado al loguearse.
-    // Pero no hace daño dejarlo por si el login no causa un re-renderizado completo.
-    setIsPending(false);
   }, [isInstalled, isPending]);
 
-  // EL useEffect HA SIDO ELIMINADO
-
   return (
-    <LiveFeedback
-      label={{
-        failed: 'Failed to login',
-        pending: 'Logging in',
-        success: 'Logged in',
-      }}
-      state={isPending ? 'pending' : undefined}
-    >
+    // El contenedor sigue sirviendo para centrar todo en la pantalla
+    <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
       <Button
         onClick={onClick}
-        disabled={isPending || !isInstalled} // <- Buena idea deshabilitarlo si no está instalado
+        disabled={isPending || !isInstalled}
         size="lg"
         variant="primary"
+        // Clases para un botón de tamaño compacto
+        className="text-lg px-8 py-3 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-shadow"
       >
-        Login with Wallet
+        {isPending ? 'Iniciando...' : 'Iniciar Sesión'}
       </Button>
-    </LiveFeedback>
+    </div>
   );
 };
