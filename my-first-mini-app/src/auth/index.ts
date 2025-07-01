@@ -6,8 +6,9 @@ import {
 import NextAuth, { type DefaultSession } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { PrismaClient } from '@prisma/client';
+import { createHmac } from 'crypto'; // <-- Importante: Añadir esto
 
-// TIPOS
+// TIPOS (Sin cambios)
 export type User = {
   walletAddress?: string;
   username?: string;
@@ -26,6 +27,12 @@ interface Session {
 
 const prisma = new PrismaClient();
 
+// Helper para verificar la firma del servidor (HMAC)
+const verifySignedNonce = (nonce: string, signedNonce: string, secret: string): boolean => {
+  const hmac = createHmac('sha256', secret).update(nonce).digest('hex');
+  return hmac === signedNonce;
+};
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
   session: { strategy: 'jwt' },
@@ -37,30 +44,44 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         signedNonce: { label: 'Signed Nonce', type: 'text' },
         finalPayloadJson: { label: 'Final Payload', type: 'text' },
       },
-      authorize: async ({ finalPayloadJson, nonce }: { finalPayloadJson: string; nonce: string }) => {
-        const finalPayload: MiniAppWalletAuthSuccessPayload = JSON.parse(finalPayloadJson);
-        const result = await verifySiweMessage(finalPayload, nonce);
-
-        if (!result.isValid || !result.siweMessageData.address) {
-          return null;
-        }
-        
-        const walletAddress = result.siweMessageData.address.toLowerCase();
-        
+      // --- ESTA ES LA FUNCIÓN CORREGIDA ---
+      authorize: async (credentials) => {
         try {
+          const { finalPayloadJson, nonce, signedNonce } = credentials;
+
+          if (!finalPayloadJson || !nonce || !signedNonce) {
+            console.error("Faltan credenciales para la autorización.");
+            return null;
+          }
+
+          // 1. Verificar la firma de TU SERVIDOR
+          const secret = process.env.HMAC_SECRET_KEY;
+          if (!secret) throw new Error("HMAC_SECRET_KEY no configurado.");
+
+          const isNonceAuthentic = verifySignedNonce(nonce as string, signedNonce as string, secret);
+          if (!isNonceAuthentic) {
+            console.error("Fallo de autorización: HMAC inválido.");
+            return null;
+          }
+
+          // 2. Verificar la firma del USUARIO
+          const finalPayload: MiniAppWalletAuthSuccessPayload = JSON.parse(finalPayloadJson as string);
+          const result = await verifySiweMessage(finalPayload, nonce as string);
+
+          if (!result.isValid || !result.siweMessageData.address) {
+            console.error("Fallo de autorización: Firma SIWE inválida.");
+            return null;
+          }
+          
+          // 3. Si todo es correcto, continuar con la base de datos
+          const walletAddress = result.siweMessageData.address.toLowerCase();
           const userInfo = await MiniKit.getUserInfo(walletAddress);
 
           const userInDb = await prisma.user.upsert({
-            where: { walletAddress: walletAddress },
-            // --- ESTE ES EL CAMBIO IMPORTANTE ---
-            update: {
-              // Si el usuario ya existe, solo actualizamos su username.
-              // NO tocamos el profilePictureUrl para no borrar la foto personalizada.
-              username: userInfo.username,
-            },
+            where: { walletAddress },
+            update: { username: userInfo.username },
             create: {
-              // Si es un usuario nuevo, guardamos todo.
-              walletAddress: walletAddress,
+              walletAddress,
               id: walletAddress,
               username: userInfo.username,
               profilePictureUrl: userInfo.profilePictureUrl,
@@ -68,24 +89,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             },
           });
 
-          // Devolvemos el usuario que ahora existe en nuestra base de datos
-          return {
-            id: userInDb.id,
-            walletAddress: userInDb.walletAddress,
-            username: userInDb.username,
-            profilePictureUrl: userInDb.profilePictureUrl,
-            streak: userInDb.streak,
-          };
+          return userInDb;
 
-        } catch (dbError) {
-          console.error("Error de base de datos en authorize:", dbError);
+        } catch (error) {
+          console.error("Error en el proceso de authorize:", error);
           return null;
         }
       },
     }),
   ],
   callbacks: {
-    // Los callbacks no necesitan cambios
+    // Tus callbacks están perfectos, no necesitan cambios
     async jwt({ token, user }) {
       if (user) {
         token.userId = user.id;
