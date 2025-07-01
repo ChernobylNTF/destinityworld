@@ -42,11 +42,6 @@ const WalletPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Estados para el Swap
-  const [fromToken, setFromToken] = useState(tokenConfig[0].symbol);
-  const [toToken, setToToken] = useState(tokenConfig[1].symbol);
-  const [fromAmount, setFromAmount] = useState('');
-
   // Cliente de Viem para leer datos de la blockchain
   const publicClient = useMemo(() => createPublicClient({
     chain: worldchain,
@@ -99,50 +94,104 @@ const WalletPage = () => {
     fetchAllBalances();
   }, [walletAddress, publicClient]);
 
-  // --- Función para generar la URL del Quick Action de UNO ---
-  const getUnoSwapUrl = () => {
-    const UNO_APP_ID = 'app_a4f7f3e62c1de0b9490a5260cb390b56';
-    
-    const fromTokenData = tokenConfig.find(t => t.symbol === fromToken);
-    const toTokenData = tokenConfig.find(t => t.symbol === toToken);
-    
-    if (!fromTokenData || !toTokenData || !fromAmount || parseFloat(fromAmount) <= 0) {
-      return '#';
-    }
-
-    const amountInWei = parseUnits(fromAmount as `${number}`, fromTokenData.decimals);
-    
-    const baseUrl = 'https://worldcoin.org/mini-app';
-    const params = new URLSearchParams({
-        app_id: UNO_APP_ID,
-        tab: 'swap',
-        fromToken: fromTokenData.contractAddress,
-        toToken: toTokenData.contractAddress,
-        amount: amountInWei.toString(),
-    });
-
-    return `${baseUrl}?${params.toString()}`;
-  };
-
   // --- Componente para renderizar la fila de un token ---
   const TokenBalanceRow = ({ token }: { token: typeof tokenConfig[0] }) => {
     const balance = balances[token.symbol];
     const displayBalance = balance ? parseFloat(balance).toFixed(4) : '0.0000';
 
     return (
-      <div className="flex items-center justify-between p-4 bg-gray-800 border border-gray-700 rounded-lg">
+      <div className="flex items-center justify-between p-4 bg-black/20 backdrop-blur-lg border border-white/10 rounded-lg">
         <div className="flex items-center">
           <img src={token.logo} alt={`Logo de ${token.name}`} className="w-10 h-10 rounded-full mr-4" onError={(e) => { (e.currentTarget as HTMLImageElement).src = `https://placehold.co/40x40/8B5CF6/FFFFFF?text=${token.symbol.charAt(0)}`; }} />
           <span className="text-xl font-bold">{token.symbol}</span>
         </div>
-        {isLoading ? <div className="h-7 w-28 bg-gray-700 rounded-md animate-pulse"></div> : <span className="text-2xl font-bold">{displayBalance}</span>}
+        {isLoading ? <div className="h-7 w-28 bg-white/20 rounded-md animate-pulse"></div> : <span className="text-2xl font-bold">{displayBalance}</span>}
       </div>
     );
   };
+  
+  // --- Componente de Interfaz de Swap Personalizada ---
+  const SwapInterface = () => {
+    const [fromToken, setFromToken] = useState(tokenConfig[0].symbol);
+    const [toToken, setToToken] = useState(tokenConfig[1].symbol);
+    const [fromAmount, setFromAmount] = useState('');
+
+    const fromTokenData = tokenConfig.find(t => t.symbol === fromToken);
+    const userBalance = balances[fromToken] || '0';
+    const hasSufficientBalance = parseFloat(fromAmount) <= parseFloat(userBalance);
+
+    const getUnoSwapUrl = () => {
+      const UNO_APP_ID = 'app_a4f7f3e62c1de0b9490a5260cb390b56';
+      const toTokenData = tokenConfig.find(t => t.symbol === toToken);
+      if (!fromTokenData || !toTokenData || !fromAmount || parseFloat(fromAmount) <= 0) return '#';
+      const amountInWei = parseUnits(fromAmount as `${number}`, fromTokenData.decimals);
+      const baseUrl = 'https://worldcoin.org/mini-app';
+      const params = new URLSearchParams({
+          app_id: UNO_APP_ID,
+          tab: 'swap',
+          fromToken: fromTokenData.contractAddress,
+          toToken: toTokenData.contractAddress,
+          amount: amountInWei.toString(),
+      });
+      return `${baseUrl}?${params.toString()}`;
+    };
+
+    return (
+        <div className="w-full max-w-md">
+          <p className="text-lg font-semibold mb-4">Intercambio</p>
+          <div className="flex flex-col gap-1 p-4 bg-black/20 backdrop-blur-lg border border-white/10 rounded-lg">
+            <div className="bg-black/20 p-4 rounded-lg">
+                <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-300">Pagas</span>
+                    <span className="text-sm text-gray-300">Balance: {parseFloat(userBalance).toFixed(4)}</span>
+                </div>
+                <div className="flex justify-between items-center mt-2">
+                    <input 
+                        type="number"
+                        placeholder="0.0"
+                        className="bg-transparent text-3xl w-2/3 focus:outline-none"
+                        value={fromAmount}
+                        onChange={(e) => setFromAmount(e.target.value)}
+                    />
+                    <div className="flex items-center gap-2 bg-gray-700/50 p-2 rounded-full">
+                        <img src={fromTokenData?.logo} className="w-6 h-6 rounded-full" />
+                        <select value={fromToken} onChange={(e) => setFromToken(e.target.value)} className="bg-transparent font-bold focus:outline-none appearance-none">
+                            {tokenConfig.map(t => <option key={t.symbol} value={t.symbol}>{t.symbol}</option>)}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div className="bg-black/20 p-4 rounded-lg">
+                <span className="text-sm text-gray-300">Recibes (aprox.)</span>
+                <div className="flex justify-between items-center mt-2">
+                    <span className="text-3xl text-gray-500">...</span>
+                    <div className="flex items-center gap-2 bg-gray-700/50 p-2 rounded-full">
+                        <img src={tokenConfig.find(t => t.symbol === toToken)?.logo} className="w-6 h-6 rounded-full" />
+                        <select value={toToken} onChange={(e) => setToToken(e.target.value)} className="bg-transparent font-bold focus:outline-none appearance-none">
+                            {tokenConfig.filter(t => t.symbol !== fromToken).map(t => <option key={t.symbol} value={t.symbol}>{t.symbol}</option>)}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <a 
+                href={getUnoSwapUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`w-full text-center font-bold py-3 px-4 rounded-lg mt-3 transition-all ${(!fromAmount || parseFloat(fromAmount) <= 0 || !hasSufficientBalance) ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+                onClick={(e) => { if (!fromAmount || parseFloat(fromAmount) <= 0 || !hasSufficientBalance) e.preventDefault(); }}
+            >
+                {!fromAmount || parseFloat(fromAmount) <= 0 ? 'Introduce una cantidad' : !hasSufficientBalance ? 'Balance insuficiente' : 'Continuar en UNO'}
+            </a>
+          </div>
+        </div>
+    );
+  }
 
   return (
     <>
-      <Page.Header className="p-0 bg-gradient-to-br from-gray-900 to-blue-900">
+      <Page.Header className="p-0">
         <TopBar
           title="Wallet"
           endAdornment={
@@ -158,7 +207,6 @@ const WalletPage = () => {
         />
       </Page.Header>
       <Page.Main className="flex flex-col items-center justify-start gap-12 px-4 py-6 text-white">
-        {/* Sección de Balances */}
         <div className="w-full max-w-md">
           <p className="text-lg font-semibold mb-4">Mis Tokens</p>
           <div className="flex flex-col gap-4">
@@ -166,42 +214,7 @@ const WalletPage = () => {
             {error && <span className="text-red-400 text-sm text-center">{error}</span>}
           </div>
         </div>
-
-        {/* Sección de Intercambio (Swap) con Quick Action */}
-        <div className="w-full max-w-md">
-          <p className="text-lg font-semibold mb-4">Intercambio</p>
-          <div className="flex flex-col gap-4 p-4 bg-gray-900 rounded-lg">
-            <div className="flex gap-4">
-              <input 
-                type="number"
-                placeholder="0.0"
-                className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-xl w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={fromAmount}
-                onChange={(e) => setFromAmount(e.target.value)}
-              />
-              <select value={fromToken} onChange={(e) => setFromToken(e.target.value)} className="bg-gray-800 border border-gray-700 text-white font-bold py-2 px-3 rounded-lg focus:outline-none">
-                {tokenConfig.map(t => <option key={t.symbol} value={t.symbol}>{t.symbol}</option>)}
-              </select>
-            </div>
-            
-            <div className="flex items-center gap-4">
-                <span className="text-gray-400">Para:</span>
-                <select value={toToken} onChange={(e) => setToToken(e.target.value)} className="bg-gray-800 border border-gray-700 text-white font-bold py-2 px-3 rounded-lg focus:outline-none w-full">
-                    {tokenConfig.filter(t => t.symbol !== fromToken).map(t => <option key={t.symbol} value={t.symbol}>{t.symbol}</option>)}
-                </select>
-            </div>
-            
-            <a 
-                href={getUnoSwapUrl()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg mt-2 transition-opacity ${(!fromAmount || parseFloat(fromAmount) <= 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                onClick={(e) => { if (!fromAmount || parseFloat(fromAmount) <= 0) e.preventDefault(); }}
-            >
-                Intercambiar con UNO
-            </a>
-          </div>
-        </div>
+        <SwapInterface />
       </Page.Main>
     </>
   );
