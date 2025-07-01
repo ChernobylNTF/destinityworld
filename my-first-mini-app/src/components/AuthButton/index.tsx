@@ -22,15 +22,14 @@ export const AuthButton = () => {
   }, [isInstalled, isPending]);
 
   return (
-    // El contenedor sigue sirviendo para centrar todo en la pantalla
-    <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+    // Contenedor que posiciona el botón arriba de la navegación
+    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-xs px-4">
       <Button
         onClick={onClick}
         disabled={isPending || !isInstalled}
         size="lg"
         variant="primary"
-        // Clases para un botón de tamaño compacto
-        className="text-lg px-8 py-3 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+        className="w-full text-lg py-3 font-semibold rounded-xl shadow-lg"
       >
         {isPending ? 'Iniciando...' : 'Iniciar Sesión'}
       </Button>
