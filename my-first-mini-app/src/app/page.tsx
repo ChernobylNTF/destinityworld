@@ -1,17 +1,19 @@
 'use client';
-import { AuthButton } from '../components/AuthButton';
-import Navigation from '../components/Navigation';
-import { Page } from '@/components/PageLayout';
-import { Verify } from '../components/Verify';
-import { Button, TopBar, Marble } from '@worldcoin/mini-apps-ui-kit-react';
+
+// Imports de React y Next.js
 import { useState, useEffect, useMemo } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 
-// Importar el componente de la moneda 3D
+// Imports de la UI y Componentes
+import Navigation from '../components/Navigation';
+import { Page } from '@/components/PageLayout';
+import { Verify } from '../components/Verify';
+import { Button, TopBar, Marble } from '@worldcoin/mini-apps-ui-kit-react';
 import SpinningCoin from '../components/SpinningCoin';
 
-// --- LÓGICA DE BLOCKCHAIN ---
+// Imports de Lógica de Autenticación y Blockchain
+import { walletAuth } from '@/auth/wallet';
 import { MiniKit, getIsUserVerified } from "@worldcoin/minikit-js";
 import { useWaitForTransactionReceipt } from '@worldcoin/minikit-react';
 import { createPublicClient, http, type TransactionReceipt } from 'viem';
@@ -29,6 +31,10 @@ export default function Home() {
   const isAuthenticated = status === 'authenticated';
   const walletAddress = session?.user?.walletAddress;
 
+  // --- CAMBIO 1: Añadimos el estado para el proceso de login ---
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // El resto de tus estados, sin cambios
   const [isVerified, setIsVerified] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
   const [claimStatus, setClaimStatus] = useState<'idle' | 'sending' | 'confirming' | 'success' | 'error'>('idle');
@@ -54,7 +60,7 @@ export default function Home() {
   });
 
   const refreshClaimStatus = async () => {
-  if (!walletAddress) return;
+    if (!walletAddress) return;
   
     setIsClaimStatusLoading(true);
     try {
@@ -87,15 +93,15 @@ export default function Home() {
       setClaimStatus('success');
       setOnChainTxHash(receipt.transactionHash);
       setTimeout(() => {
-    refreshClaimStatus();
-}, 2000);
+        refreshClaimStatus();
+      }, 2000);
       setTimeout(() => { setClaimStatus('idle'); setTransactionId(''); }, 8000);
     } else if (transactionId && isError) {
       setClaimStatus('error');
       setClaimError('La transacción falló en la red.');
       setTimeout(() => { setClaimStatus('idle'); setTransactionId(''); }, 5000);
     }
-  }, [isConfirming, isConfirmed, isError, receipt, transactionId, walletAddress]);
+  }, [isConfirming, isConfirmed, isError, receipt, transactionId]);
 
   useEffect(() => {
     if (!nextClaimTimestamp) return;
@@ -189,26 +195,53 @@ export default function Home() {
         <div className="flex flex-col items-center gap-4">
           <p className="text-5xl font-black text-yellow-400">DESTINITY</p>
           <SpinningCoin ipfsUrl={coinIpfsUrl} />
-          {!isAuthenticated && <div className="w-full max-w-sm"><AuthButton /></div>}
-          {isAuthenticated && !isVerified && <div className="w-full max-w-sm"><Verify onSuccess={handleVerificationSuccess} /></div>}
-          {isAuthenticated && isVerified && (
-            <div className="w-full max-w-sm text-center mt-4">
-              {renderClaimSection()}
-              <div className="h-10 mt-2 text-sm flex flex-col items-center justify-center">
-                {claimStatus === 'error' && <p className="text-red-400">{claimError}</p>}
-                {claimStatus === 'success' && (
-                  <div className="text-center">
-                    <p className="text-green-400">¡Tokens reclamados con éxito!</p>
-                    {onChainTxHash && (
-                      <Link href={`${EXPLORER_URL}/tx/${onChainTxHash}`} target="_blank" className="text-blue-400 hover:underline text-xs">
-                        Ver transacción
-                      </Link>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+
+          {/* --- CAMBIO 2: Lógica de renderizado para Login, Verify y Claim --- */}
+          <div className="w-full max-w-sm text-center mt-4">
+            {!isAuthenticated && (
+              <Button
+                onClick={async () => {
+                  if (isLoggingIn) return;
+                  setIsLoggingIn(true);
+                  try {
+                    await walletAuth();
+                  } catch (err) {
+                    console.error("El login falló:", err);
+                    setIsLoggingIn(false);
+                  }
+                }}
+                disabled={isLoggingIn}
+                size="lg"
+                variant="primary"
+                className="w-full text-lg py-3 font-semibold rounded-xl"
+              >
+                {isLoggingIn ? 'Iniciando...' : 'Iniciar Sesión'}
+              </Button>
+            )}
+
+            {isAuthenticated && !isVerified && (
+              <Verify onSuccess={handleVerificationSuccess} />
+            )}
+
+            {isAuthenticated && isVerified && (
+              <>
+                {renderClaimSection()}
+                <div className="h-10 mt-2 text-sm flex flex-col items-center justify-center">
+                  {claimStatus === 'error' && <p className="text-red-400">{claimError}</p>}
+                  {claimStatus === 'success' && (
+                    <div className="text-center">
+                      <p className="text-green-400">¡Tokens reclamados con éxito!</p>
+                      {onChainTxHash && (
+                        <Link href={`${EXPLORER_URL}/tx/${onChainTxHash}`} target="_blank" className="text-blue-400 hover:underline text-xs">
+                          Ver transacción
+                        </Link>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </Page.Main>
       <Page.Footer className="px-0 fixed bottom-0 w-full"><Navigation /></Page.Footer>
@@ -218,4 +251,4 @@ export default function Home() {
 
 declare module '../components/Verify' {
   export const Verify: ({ onSuccess }: { onSuccess: () => void }) => JSX.Element;
-}
+  }
