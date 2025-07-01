@@ -1,8 +1,7 @@
 'use client';
 
 import { Page } from '@/components/PageLayout';
-import { UserInfo } from '@/components/UserInfo';
-import { Button } from '@worldcoin/mini-apps-ui-kit-react';
+import { Button, TopBar, Marble } from '@worldcoin/mini-apps-ui-kit-react';
 import { useSession } from 'next-auth/react';
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
@@ -59,9 +58,9 @@ export default function StakingPage() {
     if (!walletAddress) return;
     try {
       const [dwdBal, stakedBal, rewardsBal] = await Promise.all([
-        publicClient.readContract({ address: myContractToken, abi: WorldIdClaimTokenABI.abi, functionName: 'balanceOf', args: [walletAddress as `0x${string}`] }),
-        publicClient.readContract({ address: STAKING_CONTRACT_ADDRESS, abi: StakingABI, functionName: 'stakedBalance', args: [walletAddress as `0x${string}`] }),
-        publicClient.readContract({ address: STAKING_CONTRACT_ADDRESS, abi: StakingABI, functionName: 'earned', args: [walletAddress as `0x${string}`] })
+        publicClient.readContract({ address: myContractToken as `0x${string}`, abi: WorldIdClaimTokenABI.abi, functionName: 'balanceOf', args: [walletAddress as `0x${string}`] }),
+        publicClient.readContract({ address: STAKING_CONTRACT_ADDRESS as `0x${string}`, abi: StakingABI, functionName: 'stakedBalance', args: [walletAddress as `0x${string}`] }),
+        publicClient.readContract({ address: STAKING_CONTRACT_ADDRESS as `0x${string}`, abi: StakingABI, functionName: 'earned', args: [walletAddress as `0x${string}`] })
       ]);
       setDwdBalance(formatUnits(dwdBal as bigint, 18));
       setStakedBalance(formatUnits(stakedBal as bigint, 18));
@@ -112,7 +111,6 @@ export default function StakingPage() {
       if (approvePayload.status !== 'success' || !approvePayload.transaction_id) throw new Error('Aprobación rechazada.');
       
       setTxMessage('Paso 1/2: Confirmando permiso...');
-      // Usamos un nuevo hook de espera solo para la aprobación
       await publicClient.waitForTransactionReceipt({ hash: approvePayload.transaction_id });
 
       // --- PASO 2: STAKING ---
@@ -131,7 +129,7 @@ export default function StakingPage() {
       if (stakePayload.status !== 'success' || !stakePayload.transaction_id) throw new Error('Transacción de stake rechazada.');
 
       setTxMessage('Paso 2/2: Confirmando depósito...');
-      setTransactionId(stakePayload.transaction_id); // El hook principal se encargará del éxito final
+      setTransactionId(stakePayload.transaction_id);
 
     } catch (err: any) {
       console.error("Error en el proceso de stake:", err);
@@ -141,24 +139,34 @@ export default function StakingPage() {
   };
   
   const handleUnstake = async () => {
-     // Aquí implementarías la lógica para unstake, que es un solo paso
      alert("Función de Unstake no implementada todavía.");
   };
 
   return (
     <Page>
-      <Page.Header className="p-0 bg-gradient-to-br from-gray-900 to-blue-900 text-white">
-        <UserInfo />
+      <Page.Header className="p-0 bg-gradient-to-br from-gray-900 to-blue-900">
+        <TopBar
+          title="Staking"
+          endAdornment={
+            session?.user && (
+              <div className="flex items-center gap-2 pr-2">
+                <p className="text-sm font-semibold capitalize text-white">
+                  {session.user.username}
+                </p>
+                <Marble src={session.user.profilePictureUrl} className="w-8 h-8 rounded-full" />
+              </div>
+            )
+          }
+        />
       </Page.Header>
       <Page.Main className="p-6 bg-gradient-to-br from-gray-900 to-blue-900 text-white min-h-screen">
         <div className="w-full max-w-2xl mx-auto space-y-8">
           <h1 className="text-3xl font-bold text-center text-yellow-400">💎 Staking de DWD 💎</h1>
 
-          {/* Tarjeta de Staking */}
-          <div className="p-6 bg-gray-800 rounded-lg border border-gray-700">
+          <div className="p-6 bg-black/20 backdrop-blur-lg border border-white/10 rounded-lg">
             <h2 className="text-xl font-semibold mb-4">Hacer Staking</h2>
             <div className="mb-4">
-              <div className="flex justify-between text-sm text-gray-400 mb-1">
+              <div className="flex justify-between text-sm text-gray-300 mb-1">
                 <span>Cantidad a depositar</span>
                 <span>Balance: {parseFloat(dwdBalance).toFixed(4)} DWD</span>
               </div>
@@ -167,7 +175,7 @@ export default function StakingPage() {
                 value={stakeAmount}
                 onChange={(e) => setStakeAmount(e.target.value)}
                 placeholder="0.0"
-                className="w-full p-3 bg-gray-900 border border-gray-600 rounded-md text-white text-lg"
+                className="w-full p-3 bg-black/20 border border-white/10 rounded-md text-white text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <Button
@@ -181,16 +189,15 @@ export default function StakingPage() {
             </Button>
           </div>
 
-          {/* Tarjeta de Balance en Staking */}
-          <div className="p-6 bg-gray-800 rounded-lg border border-gray-700">
+          <div className="p-6 bg-black/20 backdrop-blur-lg border border-white/10 rounded-lg">
             <h2 className="text-xl font-semibold mb-4">Tus Activos</h2>
             <div className="space-y-3">
                 <div className="flex justify-between">
-                    <span className="text-gray-400">Balance en Staking:</span>
+                    <span className="text-gray-300">Balance en Staking:</span>
                     <span className="font-bold text-lg">{parseFloat(stakedBalance).toFixed(4)} DWD</span>
                 </div>
                 <div className="flex justify-between">
-                    <span className="text-gray-400">Recompensas ganadas:</span>
+                    <span className="text-gray-300">Recompensas ganadas:</span>
                     <span className="font-bold text-lg text-green-400">{parseFloat(rewards).toFixed(4)} DWD</span>
                 </div>
             </div>
@@ -205,7 +212,6 @@ export default function StakingPage() {
              </Button>
           </div>
           
-          {/* Feedback de la transacción */}
           {txHash && (
              <div className="text-center text-sm">
                 <Link href={`${EXPLORER_URL}/tx/${txHash}`} target="_blank" className="text-blue-400 hover:underline">
