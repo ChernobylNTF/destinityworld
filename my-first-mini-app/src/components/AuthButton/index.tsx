@@ -2,13 +2,8 @@
 import { walletAuth } from '@/auth/wallet';
 import { Button, LiveFeedback } from '@worldcoin/mini-apps-ui-kit-react';
 import { useMiniKit } from '@worldcoin/minikit-js/minikit-provider';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
-/**
- * This component is an example of how to authenticate a user
- * We will use Next Auth for this example, but you can use any auth provider
- * Read More: https://docs.world.org/mini-apps/commands/wallet-auth
- */
 export const AuthButton = () => {
   const [isPending, setIsPending] = useState(false);
   const { isInstalled } = useMiniKit();
@@ -25,26 +20,12 @@ export const AuthButton = () => {
       setIsPending(false);
       return;
     }
-
+    // No es necesario setIsPending(false) aquí, porque la página cambiará de estado al loguearse.
+    // Pero no hace daño dejarlo por si el login no causa un re-renderizado completo.
     setIsPending(false);
   }, [isInstalled, isPending]);
 
-  useEffect(() => {
-    const authenticate = async () => {
-      if (isInstalled && !isPending) {
-        setIsPending(true);
-        try {
-          await walletAuth();
-        } catch (error) {
-          console.error('Auto wallet authentication error', error);
-        } finally {
-          setIsPending(false);
-        }
-      }
-    };
-
-    authenticate();
-  }, [isInstalled, isPending]);
+  // EL useEffect HA SIDO ELIMINADO
 
   return (
     <LiveFeedback
@@ -57,7 +38,7 @@ export const AuthButton = () => {
     >
       <Button
         onClick={onClick}
-        disabled={isPending}
+        disabled={isPending || !isInstalled} // <- Buena idea deshabilitarlo si no está instalado
         size="lg"
         variant="primary"
       >
