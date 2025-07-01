@@ -1,5 +1,4 @@
 import { auth } from '@/auth';
-import { AuthButton } from '@/components/AuthButton';
 import { Page } from '@/components/PageLayout';
 
 import { Pay } from '@/components/Pay';
@@ -54,7 +53,6 @@ endAdornment={
 
 <Page.Main className="flex flex-col items-center justify-start gap-4 mb-16">
 
-<AuthButton />
 <UserInfo />
 
 <Verify />
