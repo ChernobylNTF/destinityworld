@@ -188,8 +188,9 @@ export default function Home() {
       <Page.Main className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white min-h-screen pb-20">
         <div className="flex flex-col items-center gap-4">
           <p className="text-5xl font-black text-yellow-400">DESTINITY</p>
+          <AuthButton />
           <SpinningCoin ipfsUrl={coinIpfsUrl} />
-          {!isAuthenticated && <div className="w-full max-w-sm"><AuthButton /></div>}
+          
           {isAuthenticated && !isVerified && <div className="w-full max-w-sm"><Verify onSuccess={handleVerificationSuccess} /></div>}
           {isAuthenticated && isVerified && (
             <div className="w-full max-w-sm text-center mt-4">
