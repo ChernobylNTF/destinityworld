@@ -191,7 +191,7 @@ const WalletPage = () => {
 
   return (
     <>
-      <Page.Header className="p-0">
+      <Page.Header className="p-0 bg-gradient-to-br from-gray-900 to-blue-900">
         <TopBar
           title="Wallet"
           endAdornment={
