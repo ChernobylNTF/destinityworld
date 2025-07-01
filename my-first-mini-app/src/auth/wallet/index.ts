@@ -37,7 +37,7 @@ export const walletAuth = async () => {
   }
 
   await signIn('credentials', {
-    redirectTo: '/',
+    redirectTo: false,
     nonce,
     signedNonce,
     finalPayloadJson: JSON.stringify(result.finalPayload),
