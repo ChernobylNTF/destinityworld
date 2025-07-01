@@ -32,8 +32,8 @@ export const UserInfo = () => {
   };
 
   return (
-    <div className="flex flex-row items-center justify-start gap-4 rounded-m w-full p-4 text-white">
-      <Marble src={profilePictureUrl} className="w-10 h-10" />
+    <div className="flex flex-row items-center justify-start gap-1 rounded-m w-full p-0 text-white">
+      <Marble src={profilePictureUrl} className="w-8 h-8" />
       
       <div className="flex flex-col flex-grow">
         {/* Nombre de usuario y verificación */}
@@ -50,7 +50,7 @@ export const UserInfo = () => {
 
         {/* Sección de Billetera */}
         {walletAddress && (
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-1 mt-1">
             <span className="font-mono text-xs text-gray-400" title={walletAddress}>
               {formatAddress(walletAddress)}
             </span>
