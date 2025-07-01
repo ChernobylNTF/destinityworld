@@ -3,8 +3,7 @@
 import { useState, ChangeEvent, FormEvent } from 'react';
 import { useSession } from 'next-auth/react';
 import { Page } from '@/components/PageLayout';
-import { UserInfo } from '@/components/UserInfo';
-import { Button } from '@worldcoin/mini-apps-ui-kit-react';
+import { Button, TopBar, Marble } from '@worldcoin/mini-apps-ui-kit-react';
 
 export default function ProfilePage() {
   const { data: session } = useSession();
@@ -67,20 +66,32 @@ export default function ProfilePage() {
 
   return (
     <Page>
-      <Page.Header className="p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white">
-        <UserInfo />
+      <Page.Header className="p-0 bg-gradient-to-br from-gray-900 to-blue-900">
+        <TopBar
+          title="Perfil"
+          endAdornment={
+            session?.user && (
+              <div className="flex items-center gap-2 pr-2">
+                <p className="text-sm font-semibold capitalize text-white">
+                  {session.user.username}
+                </p>
+                <Marble src={session.user.profilePictureUrl} className="w-8 h-8 rounded-full" />
+              </div>
+            )
+          }
+        />
       </Page.Header>
       
       <Page.Main className="p-6 bg-gradient-to-br from-gray-900 to-blue-900 text-white min-h-screen">
         <div className="w-full max-w-md mx-auto">
           <h1 className="text-3xl font-bold mb-6 text-center">Editar Perfil</h1>
           
-          <form onSubmit={handleSubmit} className="flex flex-col items-center gap-6 p-6 bg-gray-800 rounded-lg">
+          <form onSubmit={handleSubmit} className="flex flex-col items-center gap-6 p-6 bg-black/20 backdrop-blur-lg border border-white/10 rounded-lg">
             <div className="relative">
               <img
                 src={preview || 'https://placehold.co/128x128/374151/ffffff?text=?'}
                 alt="Vista previa de la foto de perfil"
-                className="w-32 h-32 rounded-full object-cover border-4 border-gray-600"
+                className="w-32 h-32 rounded-full object-cover border-4 border-white/20"
               />
               <label 
                 htmlFor="profilePictureInput" 
