@@ -3,9 +3,9 @@ import { AuthButton } from '../components/AuthButton';
 import Navigation from '../components/Navigation';
 import { Page } from '@/components/PageLayout';
 import { Verify } from '../components/Verify';
-import { TopBar, Marble, Button } from '@worldcoin/mini-apps-ui-kit-react';
+import { Button, TopBar, Marble } from '@worldcoin/mini-apps-ui-kit-react';
 import { useState, useEffect, useMemo } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 
 // Importar el componente de la moneda 3D
@@ -164,24 +164,26 @@ export default function Home() {
   return (
     <Page>
       <Page.Header className="p-0 bg-gradient-to-br from-gray-900 to-blue-900">
-        <div className="flex items-center justify-between p-4 text-white w-full">
-            <div className="w-1/3">
-                <AuthButton />
-            </div>
-            <div className="w-1/3 text-center">
-                <h1 className="text-lg font-bold">DESTINITY</h1>
-            </div>
-            <div className="w-1/3 flex justify-end">
-                {session?.user && (
-                    <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold capitalize">
-                            {session.user.username}
-                        </p>
-                        <Marble src={session.user.profilePictureUrl} className="w-8 h-8 rounded-full" />
-                    </div>
-                )}
-            </div>
-        </div>
+        <TopBar
+          title="DESTINITY"
+          startAdornment={
+            <button onClick={() => signOut()} className="p-2 rounded-full hover:bg-white/10 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          }
+          endAdornment={
+            session?.user && (
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold capitalize">
+                  {session.user.username}
+                </p>
+                <Marble src={session.user.profilePictureUrl} className="w-8 h-8 rounded-full" />
+              </div>
+            )
+          }
+        />
       </Page.Header>
       <Page.Main className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white min-h-screen pb-20">
         <div className="flex flex-col items-center gap-4">
@@ -216,4 +218,4 @@ export default function Home() {
 
 declare module '../components/Verify' {
   export const Verify: ({ onSuccess }: { onSuccess: () => void }) => JSX.Element;
-  }
+}
