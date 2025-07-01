@@ -3,8 +3,7 @@ import { AuthButton } from '../components/AuthButton';
 import Navigation from '../components/Navigation';
 import { Page } from '@/components/PageLayout';
 import { Verify } from '../components/Verify';
-import { UserInfo } from '../components/UserInfo';
-import { Button } from '@worldcoin/mini-apps-ui-kit-react';
+import { TopBar, Marble, Button } from '@worldcoin/mini-apps-ui-kit-react';
 import { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -60,8 +59,8 @@ export default function Home() {
     setIsClaimStatusLoading(true);
     try {
       const [lastClaim, claimFrequency] = await Promise.all([
-        publicClient.readContract({ address: chrn_abi_CONTRACT_ADDRESS, abi: chrn_abiABI as any, functionName: 'lastClaimed', args: [walletAddress as `0x${string}`] }),
-        publicClient.readContract({ address: chrn_abi_CONTRACT_ADDRESS, abi: chrn_abiABI as any, functionName: 'CLAIM_INTERVAL' })
+        publicClient.readContract({ address: chrn_abi_CONTRACT_ADDRESS as `0x${string}`, abi: chrn_abiABI as any, functionName: 'lastClaimed', args: [walletAddress as `0x${string}`] }),
+        publicClient.readContract({ address: chrn_abi_CONTRACT_ADDRESS as `0x${string}`, abi: chrn_abiABI as any, functionName: 'CLAIM_INTERVAL' })
       ]);
       setNextClaimTimestamp(Number(lastClaim) + Number(claimFrequency));
     } catch (err) { console.error("Error al obtener estado de reclamo:", err); }
@@ -118,7 +117,6 @@ export default function Home() {
   
   const handleVerificationSuccess = () => setIsVerified(true);
 
-  // --- FUNCIÓN DE RECLAMO CORREGIDA FINAL ---
   const handleClaimTokens = async () => {
     const canClaim = !isClaimStatusLoading && (!nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000));
     if (!canClaim || claimStatus !== 'idle') return;
@@ -135,8 +133,6 @@ export default function Home() {
           functionName: 'claimDailyToken', 
           args: [] 
         }],
-        // Se omite el payload de 'permit2' para la función `claim`,
-        // ya que esto parece ser la causa del error "invalid_token".
       });
 
       if (finalPayload.status === 'success' && finalPayload.transaction_id) {
@@ -155,22 +151,41 @@ export default function Home() {
 
   const renderClaimSection = () => {
     if (isClaimStatusLoading) {
-      return <div><p>Verificando estado del reclamo...</p></div>;
+      return <div className="h-10"><p>Verificando estado...</p></div>;
     }
     if (canClaim) {
       const buttonText = claimStatus === 'sending' ? 'Enviando...' : claimStatus === 'confirming' ? 'Confirmando...' : 'Reclamar Tokens';
       return <Button onClick={handleClaimTokens} disabled={claimStatus !== 'idle'} size="lg" variant="primary" className="w-full">{buttonText}</Button>;
     } else {
-      return <div><p>Próximo reclamo en:</p><p className="text-xl font-bold">{countdown || '...'}</p></div>;
+      return <div className="text-center p-2 bg-black/20 rounded-lg"><p className="text-sm text-gray-300">Próximo reclamo en:</p><p className="text-xl font-bold">{countdown || '...'}</p></div>;
     }
   };
 
   return (
     <Page>
-      <Page.Header className="p-0 bg-gradient-to-br from-gray-900 to-blue-900 text-white"><UserInfo /></Page.Header>
+      <Page.Header className="p-0 bg-gradient-to-br from-gray-900 to-blue-900">
+        <div className="flex items-center justify-between p-4 text-white w-full">
+            <div className="w-1/3">
+                <AuthButton />
+            </div>
+            <div className="w-1/3 text-center">
+                <h1 className="text-lg font-bold">DESTINITY</h1>
+            </div>
+            <div className="w-1/3 flex justify-end">
+                {session?.user && (
+                    <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold capitalize">
+                            {session.user.username}
+                        </p>
+                        <Marble src={session.user.profilePictureUrl} className="w-8 h-8 rounded-full" />
+                    </div>
+                )}
+            </div>
+        </div>
+      </Page.Header>
       <Page.Main className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white min-h-screen pb-20">
         <div className="flex flex-col items-center gap-4">
-          <p className="text-5xl font-black text-yellow-600 yellow:text-white">DESTINITY</p>
+          <p className="text-5xl font-black text-yellow-400">DESTINITY</p>
           <SpinningCoin ipfsUrl={coinIpfsUrl} />
           {!isAuthenticated && <div className="w-full max-w-sm"><AuthButton /></div>}
           {isAuthenticated && !isVerified && <div className="w-full max-w-sm"><Verify onSuccess={handleVerificationSuccess} /></div>}
@@ -201,4 +216,4 @@ export default function Home() {
 
 declare module '../components/Verify' {
   export const Verify: ({ onSuccess }: { onSuccess: () => void }) => JSX.Element;
-}
+  }
