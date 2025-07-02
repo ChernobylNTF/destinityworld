@@ -26,7 +26,6 @@ export default function HomePage() {
   const { data: session } = useSession();
   const walletAddress = session?.user?.walletAddress;
 
-  const { isInstalled } = useMiniKit();
 
   // Estados
   const [isVerified, setIsVerified] = useState(false);
@@ -76,10 +75,8 @@ export default function HomePage() {
         await refreshClaimStatus();
       }
     };
-    if (isAuthenticated && walletAddress && isInstalled) {
       checkStatus();
-    }
-  }, [isAuthenticated, walletAddress, isInstalled]);
+  }, [walletAddress]);
 
   useEffect(() => {
     if (transactionId && isConfirming) {
