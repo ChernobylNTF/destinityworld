@@ -11,7 +11,7 @@ import SpinningCoin from '@/components/SpinningCoin';
 
 // Lógica de Blockchain
 import { MiniKit, getIsUserVerified } from "@worldcoin/minikit-js";
-import { useWaitForTransactionReceipt, useMiniKit } from '@worldcoin/minikit-react';
+import { useWaitForTransactionReceipt } from '@worldcoin/minikit-react';
 import { createPublicClient, http, type TransactionReceipt } from 'viem';
 import { worldchain } from 'viem/chains';
 import chrn_abiABI from '@/abi/chrn_abi.json';
