@@ -3,8 +3,9 @@ import { walletAuth } from '@/auth/wallet';
 import { Button } from '@worldcoin/mini-apps-ui-kit-react';
 import { useMiniKit } from '@worldcoin/minikit-js/minikit-provider';
 import { useCallback, useState } from 'react';
+import clsx from 'clsx';
 
-export const AuthButton = () => {
+export const AuthButton = ({ children, className, ...props }) => {
   const [isPending, setIsPending] = useState(false);
   const { isInstalled } = useMiniKit();
 
@@ -17,21 +18,19 @@ export const AuthButton = () => {
       await walletAuth();
     } catch (error) {
       console.error('Wallet authentication button error', error);
+    } finally {
       setIsPending(false);
     }
   }, [isInstalled, isPending]);
 
   return (
-    <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-full max-w-xs px-4">
-      <Button
-        onClick={onClick}
-        disabled={isPending || !isInstalled}
-        size="lg"
-        variant="primary"
-        className="w-full text-lg py-3 font-semibold rounded-xl shadow-lg"
-      >
-        {isPending ? 'Iniciando...' : 'Iniciar Sesión'}
-      </Button>
-    </div>
+    <Button
+      onClick={onClick}
+      disabled={isPending || !isInstalled}
+      className={clsx("w-full", className)}
+      {...props}
+    >
+      {children || (isPending ? 'Iniciando...' : 'Iniciar Sesión')}
+    </Button>
   );
 };
