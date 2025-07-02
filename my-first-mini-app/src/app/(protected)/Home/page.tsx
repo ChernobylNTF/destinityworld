@@ -10,7 +10,7 @@ import Link from 'next/link';
 import SpinningCoin from '@/components/SpinningCoin';
 
 // Lógica de Blockchain
-import { MiniKit, getIsUserVerified } from "@worldcoin/minikit-js";
+import { MiniKit, getIsUserVerified, useMiniKit } from "@worldcoin/minikit-js";
 import { useWaitForTransactionReceipt } from '@worldcoin/minikit-react';
 import { createPublicClient, http, type TransactionReceipt } from 'viem';
 import { worldchain } from 'viem/chains';
@@ -25,6 +25,8 @@ const EXPLORER_URL = "https://worldscan.org";
 export default function HomePage() {
   const { data: session } = useSession();
   const walletAddress = session?.user?.walletAddress;
+
+  const { isInstalled } = useMiniKit();
 
   // Estados
   const [isVerified, setIsVerified] = useState(false);
@@ -74,8 +76,10 @@ export default function HomePage() {
         await refreshClaimStatus();
       }
     };
-    checkStatus();
-  }, [walletAddress]);
+    if (isAuthenticated && walletAddress && isInstalled) {
+      checkStatus();
+    }
+  }, [isAuthenticated, walletAddress, isInstalled]);
 
   useEffect(() => {
     if (transactionId && isConfirming) {
