@@ -19,6 +19,7 @@
     "@react-three/fiber": "^9.1.2",
     "@vercel/blob": "^1.1.1",
     "@vercel/speed-insights": "^1.2.0",
+    "@worldcoin/create-mini-app": "^0.4.0",
     "@worldcoin/mini-apps-ui-kit-react": "^1.2.4",
     "@worldcoin/minikit-js": "^1.9.6",
     "@worldcoin/minikit-react": "^1.9.7",
