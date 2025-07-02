@@ -8,12 +8,12 @@ import { Home, Wallet, Lock, Leaderboard, User, InfoCircle } from 'iconoir-react
 
 // Definimos los elementos de la navegación en un array para un código más limpio
 const navItems = [
-  { href: '/', label: 'Home', icon: Home },
-  { href: '/wallet', label: 'Wallet', icon: Wallet },
-  { href: '/staking', label: 'Staking', icon: Lock },
-  { href: '/ranking', label: 'Ranking', icon: Leaderboard },
-  { href: '/perfil', label: 'Perfil', icon: User },
-  { href: '/info', label: 'Info', icon: InfoCircle },
+  { href: '/Home', label: 'Home', icon: Home },
+  { href: '/Wallet', label: 'Wallet', icon: Wallet },
+  { href: '/Staking', label: 'Staking', icon: Lock },
+  { href: '/Ranking', label: 'Ranking', icon: Leaderboard },
+  { href: '/Perfil', label: 'Perfil', icon: User },
+  { href: '/Info', label: 'Info', icon: InfoCircle },
 ];
 
 export default function Navigation() {
