@@ -1,254 +1,52 @@
 'use client';
 
-// Imports de React y Next.js
-import { useState, useEffect, useMemo } from 'react';
-import { useSession, signOut } from 'next-auth/react';
-import Link from 'next/link';
+import { AuthButton } from '@/components/AuthButton';
+import SpinningCoin from '@/components/SpinningCoin';
 
-// Imports de la UI y Componentes
-import Navigation from '../components/Navigation';
-import { Page } from '@/components/PageLayout';
-import { Verify } from '../components/Verify';
-import { Button, TopBar, Marble } from '@worldcoin/mini-apps-ui-kit-react';
-import SpinningCoin from '../components/SpinningCoin';
-
-// Imports de Lógica de Autenticación y Blockchain
-import { walletAuth } from '@/auth/wallet';
-import { MiniKit, getIsUserVerified } from "@worldcoin/minikit-js";
-import { useWaitForTransactionReceipt } from '@worldcoin/minikit-react';
-import { createPublicClient, http, type TransactionReceipt } from 'viem';
-import { worldchain } from 'viem/chains';
-import chrn_abiABI from '@/abi/chrn_abi.json';
-
-// --- Configuración ---
-const chrn_abi_CONTRACT_ADDRESS = '0xc418b282f205c3f4942451676dd064496ee69be4';
-const WORLDCHAIN_RPC_URL = 'https://worldchain-mainnet.g.alchemy.com/public';
 const coinIpfsUrl = "https://gateway.pinata.cloud/ipfs/bafybeielalf3z7q7x7vngejt53qosizddaltox7laqngxjdqhf2vyn6egq";
-const EXPLORER_URL = "https://worldscan.org";
 
-export default function Home() {
-  const { data: session, status } = useSession();
-  const isAuthenticated = status === 'authenticated';
-  const walletAddress = session?.user?.walletAddress;
-
-  // --- CAMBIO 1: Añadimos el estado para el proceso de login ---
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-
-  // El resto de tus estados, sin cambios
-  const [isVerified, setIsVerified] = useState(false);
-  const [claimError, setClaimError] = useState<string | null>(null);
-  const [claimStatus, setClaimStatus] = useState<'idle' | 'sending' | 'confirming' | 'success' | 'error'>('idle');
-  const [nextClaimTimestamp, setNextClaimTimestamp] = useState<number | null>(null);
-  const [countdown, setCountdown] = useState('');
-  const [transactionId, setTransactionId] = useState<string>('');
-  const [onChainTxHash, setOnChainTxHash] = useState<string>('');
-  const [isClaimStatusLoading, setIsClaimStatusLoading] = useState(true);
-
-  const publicClient = useMemo(() => createPublicClient({
-    chain: worldchain, transport: http(WORLDCHAIN_RPC_URL),
-  }), []);
-
-  const {
-    data: receipt,
-    isLoading: isConfirming,
-    isSuccess: isConfirmed,
-    isError,
-  } = useWaitForTransactionReceipt({
-    client: publicClient,
-    appConfig: { app_id: process.env.NEXT_PUBLIC_APP_ID as `app_${string}` },
-    transactionId: transactionId,
-  });
-
-  const refreshClaimStatus = async () => {
-    if (!walletAddress) return;
+export default function CustomLoginPage() {
   
-    setIsClaimStatusLoading(true);
-    try {
-      const [lastClaim, claimFrequency] = await Promise.all([
-        publicClient.readContract({ address: chrn_abi_CONTRACT_ADDRESS as `0x${string}`, abi: chrn_abiABI as any, functionName: 'lastClaimed', args: [walletAddress as `0x${string}`] }),
-        publicClient.readContract({ address: chrn_abi_CONTRACT_ADDRESS as `0x${string}`, abi: chrn_abiABI as any, functionName: 'CLAIM_INTERVAL' })
-      ]);
-      setNextClaimTimestamp(Number(lastClaim) + Number(claimFrequency));
-    } catch (err) { console.error("Error al obtener estado de reclamo:", err); }
-    finally { setIsClaimStatusLoading(false); }
-  };
-
-  useEffect(() => {
-    const checkStatus = async () => {
-      if (isAuthenticated && walletAddress) {
-        try {
-          const verificationStatus = await getIsUserVerified();
-          if (verificationStatus.isVerified) setIsVerified(true);
-        } catch (e) { console.warn("No se pudo comprobar la verificación:", e); }
-        await refreshClaimStatus();
-      }
-    };
-    checkStatus();
-  }, [isAuthenticated, walletAddress]);
-
-  useEffect(() => {
-    if (transactionId && isConfirming) {
-      setClaimStatus('confirming');
-    } else if (transactionId && isConfirmed && receipt) {
-      setClaimStatus('success');
-      setOnChainTxHash(receipt.transactionHash);
-      setTimeout(() => {
-        refreshClaimStatus();
-      }, 2000);
-      setTimeout(() => { setClaimStatus('idle'); setTransactionId(''); }, 8000);
-    } else if (transactionId && isError) {
-      setClaimStatus('error');
-      setClaimError('La transacción falló en la red.');
-      setTimeout(() => { setClaimStatus('idle'); setTransactionId(''); }, 5000);
-    }
-  }, [isConfirming, isConfirmed, isError, receipt, transactionId]);
-
-  useEffect(() => {
-    if (!nextClaimTimestamp) return;
-    const interval = setInterval(() => {
-      const now = Math.floor(Date.now() / 1000);
-      const secondsLeft = nextClaimTimestamp - now;
-      if (secondsLeft > 0) {
-        const h = Math.floor(secondsLeft / 3600).toString().padStart(2, '0');
-        const m = Math.floor((secondsLeft % 3600) / 60).toString().padStart(2, '0');
-        const s = (secondsLeft % 60).toString().padStart(2, '0');
-        setCountdown(`${h}:${m}:${s}`);
-      } else {
-        setCountdown('');
-        setNextClaimTimestamp(null);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [nextClaimTimestamp]);
-  
-  const handleVerificationSuccess = () => setIsVerified(true);
-
-  const handleClaimTokens = async () => {
-    const canClaim = !isClaimStatusLoading && (!nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000));
-    if (!canClaim || claimStatus !== 'idle') return;
-
-    setClaimStatus('sending');
-    setClaimError(null);
-    setOnChainTxHash('');
-
-    try {
-      const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
-        transaction: [{ 
-          address: chrn_abi_CONTRACT_ADDRESS, 
-          abi: chrn_abiABI as any, 
-          functionName: 'claimDailyToken', 
-          args: [] 
-        }],
-      });
-
-      if (finalPayload.status === 'success' && finalPayload.transaction_id) {
-        setTransactionId(finalPayload.transaction_id);
-      } else {
-        throw new Error(finalPayload.error_code ?? 'Transacción rechazada en MiniKit.');
-      }
-    } catch (err: any) {
-      console.error("Error al iniciar el reclamo:", err);
-      setClaimError(err.message || "La transacción fue rechazada.");
-      setClaimStatus('idle');
-    }
-  };
-  
-  const canClaim = !isClaimStatusLoading && (!nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000));
-
-  const renderClaimSection = () => {
-    if (isClaimStatusLoading) {
-      return <div className="h-10"><p>Verificando estado...</p></div>;
-    }
-    if (canClaim) {
-      const buttonText = claimStatus === 'sending' ? 'Enviando...' : claimStatus === 'confirming' ? 'Confirmando...' : 'Reclamar Tokens';
-      return <Button onClick={handleClaimTokens} disabled={claimStatus !== 'idle'} size="lg" variant="primary" className="w-full">{buttonText}</Button>;
-    } else {
-      return <div className="text-center p-2 bg-black/20 rounded-lg"><p className="text-sm text-gray-300">Próximo reclamo en:</p><p className="text-xl font-bold">{countdown || '...'}</p></div>;
-    }
+  const neonTextStyle = {
+    textShadow: `
+      0 0 5px rgba(0, 191, 255, 0.7),
+      0 0 10px rgba(0, 191, 255, 0.7),
+      0 0 20px rgba(0, 191, 255, 0.5),
+      0 0 40px rgba(0, 191, 255, 0.3)
+    `,
   };
 
   return (
-    <Page>
-      <Page.Header className="p-0 bg-gradient-to-br from-gray-900 to-blue-900">
-        <TopBar
-          title="DESTINITY"
-          startAdornment={
-            <button onClick={() => signOut()} className="p-2 rounded-full hover:bg-white/10 transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          }
-          endAdornment={
-            session?.user && (
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold capitalize">
-                  {session.user.username}
-                </p>
-                <Marble src={session.user.profilePictureUrl} className="w-8 h-8 rounded-full" />
-              </div>
-            )
-          }
-        />
-      </Page.Header>
-      <Page.Main className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white min-h-screen pb-20">
-        <div className="flex flex-col items-center gap-4">
-          <p className="text-5xl font-black text-yellow-400">DESTINITY</p>
-          <SpinningCoin ipfsUrl={coinIpfsUrl} />
+    <main className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white min-h-screen">
+      <div className="flex flex-col items-center justify-center text-center gap-10">
+        
+        <h1 
+          className="text-7xl md:text-8xl font-black text-white tracking-widest"
+          style={{ textShadow: '0px 4px 15px rgba(0,0,0,0.5)' }}
+        >
+          DESTINITY
+        </h1>
 
-          {/* --- CAMBIO 2: Lógica de renderizado para Login, Verify y Claim --- */}
-          <div className="w-full max-w-sm text-center mt-4">
-            {!isAuthenticated && (
-              <Button
-                onClick={async () => {
-                  if (isLoggingIn) return;
-                  setIsLoggingIn(true);
-                  try {
-                    await walletAuth();
-                  } catch (err) {
-                    console.error("El login falló:", err);
-                    setIsLoggingIn(false);
-                  }
-                }}
-                disabled={isLoggingIn}
-                size="lg"
-                variant="primary"
-                className="w-full text-lg py-3 font-semibold rounded-xl"
+        <div className="w-full max-w-sm p-8 bg-black/20 backdrop-blur-lg border border-white/10 rounded-xl shadow-2xl">
+          <div className="flex flex-col items-center gap-6">
+            <p className="text-gray-300">
+              Conéctate para empezar tu viaje y reclamar tus recompensas.
+            </p>
+            
+            <AuthButton
+              className="bg-black rounded-lg p-4 border border-transparent hover:border-cyan-400 transition-all duration-300 group"
+            >
+              <span 
+                className="text-xl font-bold text-white transition-all duration-300 group-hover:text-cyan-300"
+                style={neonTextStyle}
               >
-                {isLoggingIn ? 'Iniciando...' : 'Iniciar Sesión'}
-              </Button>
-            )}
-
-            {isAuthenticated && !isVerified && (
-              <Verify onSuccess={handleVerificationSuccess} />
-            )}
-
-            {isAuthenticated && isVerified && (
-              <>
-                {renderClaimSection()}
-                <div className="h-10 mt-2 text-sm flex flex-col items-center justify-center">
-                  {claimStatus === 'error' && <p className="text-red-400">{claimError}</p>}
-                  {claimStatus === 'success' && (
-                    <div className="text-center">
-                      <p className="text-green-400">¡Tokens reclamados con éxito!</p>
-                      {onChainTxHash && (
-                        <Link href={`${EXPLORER_URL}/tx/${onChainTxHash}`} target="_blank" className="text-blue-400 hover:underline text-xs">
-                          Ver transacción
-                        </Link>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
+                Conectar Wallet
+              </span>
+            </AuthButton>
           </div>
         </div>
-      </Page.Main>
-      <Page.Footer className="px-0 fixed bottom-0 w-full"><Navigation /></Page.Footer>
-    </Page>
+
+      </div>
+    </main>
   );
 }
-
-declare module '../components/Verify' {
-  export const Verify: ({ onSuccess }: { onSuccess: () => void }) => JSX.Element;
-  }
