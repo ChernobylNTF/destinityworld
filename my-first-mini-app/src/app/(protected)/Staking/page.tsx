@@ -11,7 +11,7 @@ import { MiniKit } from "@worldcoin/minikit-js";
 import { useWaitForTransactionReceipt } from '@worldcoin/minikit-react';
 import { createPublicClient, http, formatUnits, parseEther, type TransactionReceipt } from 'viem';
 import { worldchain } from 'viem/chains';
-import chrn_abiABI from '@/abi/chrn_abi.json'; // ABI de tu token CHRN
+import erc20_abiAbi from '@/abi/erc20_abi.json';
 
 // ABI Real de tu contrato de Staking
 const CHRN_staking_abi = [
@@ -88,7 +88,7 @@ export default function StakingPage() {
     if (!walletAddress) return;
     try {
       const [chrnBal, stakedBal, rewardsBal] = await Promise.all([
-        publicClient.readContract({ address: myContractToken as `0x${string}`, abi: chrn_abi, functionName: 'balanceOf', args: [walletAddress as `0x${string}`] }),
+        publicClient.readContract({ address: myContractToken as `0x${string}`, abi: erc20_abi, functionName: 'balanceOf', args: [walletAddress as `0x${string}`] }),
         publicClient.readContract({ address: STAKING_CONTRACT_ADDRESS as `0x${string}`, abi: CHRN_staking_abi, functionName: 'getTokensStaked', args: [walletAddress as `0x${string}`] }),
         publicClient.readContract({ address: STAKING_CONTRACT_ADDRESS as `0x${string}`, abi: CHRN_staking_abi, functionName: 'earned', args: [walletAddress as `0x${string}`] })
       ]);
