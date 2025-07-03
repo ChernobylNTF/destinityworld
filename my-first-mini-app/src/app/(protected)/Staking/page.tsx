@@ -125,7 +125,7 @@ export default function StakingPage() {
       setTxStatus('approving');
       setTxMessage('Paso 1/2: Solicitando permiso...');
       const approvePayload = await MiniKit.commandsAsync.sendTransaction({
-        transaction: [{ address: myContractToken, abi: chrn_abi, functionName: 'approve', args: [STAKING_CONTRACT_ADDRESS, amountToStake] }],
+        transaction: [{ address: myContractToken, abi: erc20_abi, functionName: 'approve', args: [STAKING_CONTRACT_ADDRESS, amountToStake] }],
       });
       if (approvePayload.status !== 'success' || !approvePayload.transaction_id) throw new Error('Aprobación rechazada.');
       setTxMessage('Paso 1/2: Confirmando permiso...');
