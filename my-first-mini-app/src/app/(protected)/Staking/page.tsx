@@ -20,7 +20,7 @@ import CHRN_staking_abiABI from '@/abi/CHRN_staking_abi.json';
 // --- CONFIGURACIÓN Y CONSTANTES (SIGUIENDO EL PATRÓN DE HOMEPAGE) ---
 const CHRN_staking_abi_CONTRACT_ADDRESS = '0x5ea935f53f98f63f719972df49ca1ba5d520d36a';
 const chrn_abi_CONTRACT_ADDRESS = '0xc418b282f205c3f4942451676dd064496ee69be4';
-const WORLDCHAIN_RPC_URL = 'https://worldchain.g.alchemy.com/public';
+const WORLDCHAIN_RPC_URL = 'https://worldchain-mainnet.g.alchemy.com/public';
 const EXPLORER_URL = "https://worldscan.org";
 
 
