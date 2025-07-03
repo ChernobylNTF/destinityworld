@@ -11,7 +11,7 @@ import { MiniKit } from "@worldcoin/minikit-js";
 import { useWaitForTransactionReceipt } from '@worldcoin/minikit-react';
 import { createPublicClient, http, formatUnits, parseEther, type TransactionReceipt } from 'viem';
 import { worldchain } from 'viem/chains';
-import erc20_abiAbi from '@/abi/erc20_abi.json';
+import erc20Abi from '@/abi/erc20_abi.json';
 
 // ABI Real de tu contrato de Staking
 const CHRN_staking_abi = [
