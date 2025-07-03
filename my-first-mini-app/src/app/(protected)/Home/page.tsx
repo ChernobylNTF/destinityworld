@@ -53,7 +53,15 @@ export default function HomePage() {
   });
 
   const refreshClaimStatus = async () => {
-    if (!walletAddress) return;
+    // --- MODIFICACIÓN 1 INICIO ---
+    // Se añade una "guarda" para asegurar que walletAddress no es undefined.
+    // Si la función es llamada por error antes de tiempo, se detiene aquí.
+    if (!walletAddress) {
+      console.log("refreshClaimStatus: No hay dirección de billetera todavía.");
+      return;
+    }
+    // --- MODIFICACIÓN 1 FIN ---
+
     setIsClaimStatusLoading(true);
     try {
       const [lastClaim, claimFrequency] = await Promise.all([
@@ -67,13 +75,22 @@ export default function HomePage() {
 
   useEffect(() => {
     const checkStatus = async () => {
+      // --- MODIFICACIÓN 2 INICIO ---
+      // Toda la lógica ahora está dentro de este `if` para evitar ejecuciones
+      // con `walletAddress` undefined. Esto soluciona la condición de carrera.
       if (walletAddress) {
+        console.log("Dirección de billetera disponible:", walletAddress);
         try {
           const verificationStatus = await getIsUserVerified();
           if (verificationStatus.isVerified) setIsVerified(true);
         } catch (e) { console.warn("No se pudo comprobar la verificación:", e); }
+        
+        // Ahora es seguro llamar a esta función.
         await refreshClaimStatus();
+      } else {
+        console.log("checkStatus: Esperando la dirección de la billetera...");
       }
+      // --- MODIFICACIÓN 2 FIN ---
     };
       checkStatus();
   }, [walletAddress]);
@@ -209,4 +226,4 @@ export default function HomePage() {
       <Page.Footer className="px-0 fixed bottom-0 w-full"><Navigation /></Page.Footer>
     </Page>
   );
-  }
+}
