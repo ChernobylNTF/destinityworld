@@ -199,7 +199,7 @@ export default function StakingPage() {
             <div className="mb-4">
               <div className="flex justify-between text-sm text-gray-300 mb-1">
                 <span>Cantidad a depositar</span>
-                <span>Balance: {parseFloat(dwdBalance).toFixed(4)} CHRN</span>
+                <span>Balance: {parseFloat(chrnBalance).toFixed(4)} CHRN</span>
               </div>
               <input type="number" value={stakeAmount} onChange={(e) => setStakeAmount(e.target.value)} placeholder="0.0" className="w-full p-3 bg-black/20 border border-white/10 rounded-md text-white text-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
