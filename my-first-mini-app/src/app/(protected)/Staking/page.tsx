@@ -67,7 +67,7 @@ export default function StakingPage() {
 
   const [stakeAmount, setStakeAmount] = useState('');
   const [unstakeAmount, setUnstakeAmount] = useState('');
-  const [dwdBalance, setDwdBalance] = useState('0');
+  const [chrnBalance, setChrnBalance] = useState('0');
   const [stakedBalance, setStakedBalance] = useState('0');
   const [rewards, setRewards] = useState('0');
 
