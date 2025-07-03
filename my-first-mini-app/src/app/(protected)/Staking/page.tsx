@@ -205,9 +205,10 @@ export default function StakingPage() {
       <Page.Main className="p-6 bg-gradient-to-br from-gray-900 to-blue-900 text-white min-h-screen">
         <div className="w-full max-w-2xl mx-auto space-y-8">
           <h1 className="text-3xl font-bold text-center text-yellow-400">💎 Staking de CHRN 💎</h1>
+	  <h2 className="text-2xl font-bold text-center text-yellow-400">🚨 PRÓXIMAMENTE 🚨</h2>
 
           <div className="p-6 bg-black/30 backdrop-blur-lg border border-white/10 rounded-xl shadow-lg">
-            <h2 className="text-xl font-semibold mb-4">Hacer Staking</h2>
+            <h3 className="text-xl font-semibold mb-4">Hacer Staking</h3>
             <div className="mb-4">
               <div className="flex justify-between text-sm text-gray-300 mb-2">
                 <span>Cantidad a depositar</span>
