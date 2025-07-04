@@ -1,12 +1,36 @@
 'use client';
 
+// Tus imports originales
 import { AuthButton } from '@/components/AuthButton';
 import SpinningCoin from '@/components/SpinningCoin';
+
+// --- IMPORTS AÑADIDOS ---
+import { useState } from 'react';
+import { Verify } from '@/components/Verify'; // Asumo que este componente existe
+// La importación de useRouter ha sido eliminada.
 
 const coinIpfsUrl = "https://gateway.pinata.cloud/ipfs/bafybeielalf3z7q7x7vngejt53qosizddaltox7laqngxjdqhf2vyn6egq";
 
 export default function CustomLoginPage() {
   
+  // --- LÓGICA AÑADIDA ---
+  // Se elimina la línea: const router = useRouter();
+  
+  // Un estado simple para saber si la wallet está conectada.
+  const [isWalletConnected, setIsWalletConnected] = useState(false);
+
+  // Tu AuthButton debe llamar a esta función cuando se conecte exitosamente.
+  const handleConnectSuccess = () => {
+    setIsWalletConnected(true);
+  };
+
+  // El componente Verify llamará a esta función cuando la verificación sea exitosa.
+  const handleVerificationSuccess = () => {
+    // Se reemplaza router.push por una función nativa del navegador.
+    window.location.href = '/home'; 
+  };
+  // --- FIN DE LA LÓGICA AÑADIDA ---
+
   const neonTextStyle = {
     textShadow: `
       0 0 5px rgba(0, 191, 255, 0.7),
@@ -29,20 +53,32 @@ export default function CustomLoginPage() {
 
         <div className="w-full max-w-sm p-8 bg-black/20 backdrop-blur-lg border border-white/10 rounded-xl shadow-2xl">
           <div className="flex flex-col items-center gap-6">
-            <p className="text-gray-300">
-              Conéctate para empezar tu viaje y reclamar tus recompensas.
-            </p>
             
-            <AuthButton
-              className="bg-black rounded-lg p-4 border border-transparent hover:border-cyan-400 transition-all duration-300 group"
-            >
-              <span 
-                className="text-xl font-bold text-white transition-all duration-300 group-hover:text-cyan-300"
-                style={neonTextStyle}
-              >
-                Conectar Wallet
-              </span>
-            </AuthButton>
+            {/* --- LÓGICA DE VISUALIZACIÓN --- */}
+
+            {!isWalletConnected ? (
+              // Si la wallet NO está conectada, muestra tu botón original.
+              <>
+                <p className="text-gray-300">
+                  Conéctate para empezar tu viaje y reclamar tus recompensas.
+                </p>
+                <AuthButton
+                  onConnectSuccess={handleConnectSuccess} // Le pasas la función al botón.
+                  className="bg-black rounded-lg p-4 border border-transparent hover:border-cyan-400 transition-all duration-300 group"
+                >
+                  <span 
+                    className="text-xl font-bold text-white transition-all duration-300 group-hover:text-cyan-300"
+                    style={neonTextStyle}
+                  >
+                    Conectar Wallet
+                  </span>
+                </AuthButton>
+              </>
+            ) : (
+              // Si la wallet SÍ está conectada, muestra el componente Verify.
+              <Verify onSuccess={handleVerificationSuccess} />
+            )}
+
           </div>
         </div>
 
