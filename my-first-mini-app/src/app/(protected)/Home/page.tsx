@@ -4,12 +4,14 @@ import Navigation from '@/components/Navigation';
 import { Page } from '@/components/PageLayout';
 import { TopBar, Marble } from '@worldcoin/mini-apps-ui-kit-react';
 import { useState, useEffect, useMemo } from 'react';
-// Se elimina la importación de 'useSession' y 'signOut'
+// --- RESTAURADO ---
+import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import SpinningCoin from '@/components/SpinningCoin';
-// Se elimina la importación de 'Verify' y 'getIsUserVerified'
+// Se mantiene eliminada la importación de 'Verify'
 
 // Lógica de Blockchain
+// Se mantiene eliminada la importación de 'getIsUserVerified'
 import { useWaitForTransactionReceipt } from '@worldcoin/minikit-react';
 import { createPublicClient, http, type TransactionReceipt, isAddress } from 'viem';
 import { worldchain } from 'viem/chains';
@@ -23,9 +25,9 @@ const coinIpfsUrl = "https://gateway.pinata.cloud/ipfs/bafybeielalf3z7q7x7vngejt
 const EXPLORER_URL = "https://worldscan.org";
 
 export default function HomePage() {
-  // Necesitarás una forma de obtener la walletAddress aquí.
-  // Esto dependerá de tu librería de conexión de wallet (por ejemplo, wagmi, ethers, etc.).
-  const [walletAddress, setWalletAddress] = useState<`0x${string}` | null>(null);
+  // --- RESTAURADO ---
+  const { data: session, status } = useSession();
+  const walletAddress = session?.user?.walletAddress;
 
   // --- ESTADOS ---
   const [claimError, setClaimError] = useState<string | null>(null);
@@ -68,15 +70,13 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    // Aquí deberías establecer la dirección de la wallet desde tu librería de conexión.
-    // Por ejemplo: const { address } = useAccount(); setWalletAddress(address);
-    if (walletAddress && isAddress(walletAddress)) {
-      refreshClaimStatus(walletAddress);
-    } else {
-      // Si no hay wallet, podrías querer manejarlo, por ahora solo detenemos la carga.
-      setIsClaimStatusLoading(false);
+    if (status === 'authenticated' && isAddress(walletAddress as string)) {
+      refreshClaimStatus(walletAddress as `0x${string}`);
+    } else if (status === 'unauthenticated') {
+      // Si por alguna razón llega aquí sin sesión, podría redirigirse al login.
+      window.location.href = '/';
     }
-  }, [walletAddress]);
+  }, [status, walletAddress]);
 
   useEffect(() => {
     if (transactionId && isConfirming) setClaimStatus('confirming');
@@ -137,7 +137,7 @@ export default function HomePage() {
   const canClaim = !isClaimStatusLoading && (!nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000));
 
   const renderClaimSection = () => {
-    if (isClaimStatusLoading) return <div className="h-10"><p>Verificando estado...</p></div>;
+    if (status === 'loading' || isClaimStatusLoading) return <div className="h-10"><p>Verificando estado...</p></div>;
     if (canClaim) {
       return (
         <button onClick={handleClaimTokens} disabled={claimStatus !== 'idle'} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors">
@@ -152,7 +152,25 @@ export default function HomePage() {
   return (
     <Page>
       <Page.Header className="p-0 bg-gradient-to-br from-gray-900 to-blue-900">
-        <TopBar title="DESTINITY" />
+        {/* --- CÓDIGO DE LA BARRA SUPERIOR RESTAURADO --- */}
+        <TopBar
+          title="DESTINITY"
+          startAdornment={
+            <button onClick={() => signOut()} className="p-2 rounded-full hover:bg-white/10 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          }
+          endAdornment={
+            session?.user && (
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold capitalize">{session.user.username}</p>
+                <Marble src={session.user.profilePictureUrl} className="w-8 h-8 rounded-full" />
+              </div>
+            )
+          }
+        />
       </Page.Header>
       <Page.Main className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white min-h-screen pb-20">
         <div className="flex flex-col items-center gap-4">
@@ -180,4 +198,4 @@ export default function HomePage() {
       <Page.Footer className="px-0 fixed bottom-0 w-full"><Navigation /></Page.Footer>
     </Page>
   );
-}
+                }
