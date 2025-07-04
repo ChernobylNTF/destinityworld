@@ -12,7 +12,7 @@ import SpinningCoin from '@/components/SpinningCoin';
 // Lógica de Blockchain
 import { MiniKit, getIsUserVerified } from "@worldcoin/minikit-js";
 import { useWaitForTransactionReceipt } from '@worldcoin/minikit-react';
-import { createPublicClient, http, type TransactionReceipt } from 'viem';
+import { createPublicClient, http, type TransactionReceipt, isAddress } from 'viem';
 import { worldchain } from 'viem/chains';
 import chrn_abiABI from '@/abi/chrn_abi.json';
 
@@ -25,7 +25,6 @@ const EXPLORER_URL = "https://worldscan.org";
 export default function HomePage() {
   const { data: session } = useSession();
   const walletAddress = session?.user?.walletAddress;
-
 
   // Estados
   const [isVerified, setIsVerified] = useState(false);
@@ -53,15 +52,12 @@ export default function HomePage() {
   });
 
   const refreshClaimStatus = async () => {
-    // --- MODIFICACIÓN 1 INICIO ---
-    // Se añade una "guarda" para asegurar que walletAddress no es undefined.
-    // Si la función es llamada por error antes de tiempo, se detiene aquí.
-    if (!walletAddress) {
-      console.log("refreshClaimStatus: No hay dirección de billetera todavía.");
+    if (!isAddress(walletAddress as string)) {
+      console.warn("Intento de refrescar estado sin una dirección válida.");
+      setIsClaimStatusLoading(false);
       return;
     }
-    // --- MODIFICACIÓN 1 FIN ---
-
+    
     setIsClaimStatusLoading(true);
     try {
       const [lastClaim, claimFrequency] = await Promise.all([
@@ -69,30 +65,28 @@ export default function HomePage() {
         publicClient.readContract({ address: chrn_abi_CONTRACT_ADDRESS as `0x${string}`, abi: chrn_abiABI as any, functionName: 'CLAIM_INTERVAL' })
       ]);
       setNextClaimTimestamp(Number(lastClaim) + Number(claimFrequency));
-    } catch (err) { console.error("Error al obtener estado de reclamo:", err); }
-    finally { setIsClaimStatusLoading(false); }
+    } catch (err) { 
+      console.error("Error al obtener estado de reclamo:", err); 
+    } finally { 
+      setIsClaimStatusLoading(false); 
+    }
   };
 
   useEffect(() => {
     const checkStatus = async () => {
-      // --- MODIFICACIÓN 2 INICIO ---
-      // Toda la lógica ahora está dentro de este `if` para evitar ejecuciones
-      // con `walletAddress` undefined. Esto soluciona la condición de carrera.
-      if (walletAddress) {
-        console.log("Dirección de billetera disponible:", walletAddress);
+      if (isAddress(walletAddress as string)) {
         try {
           const verificationStatus = await getIsUserVerified();
           if (verificationStatus.isVerified) setIsVerified(true);
-        } catch (e) { console.warn("No se pudo comprobar la verificación:", e); }
-        
-        // Ahora es seguro llamar a esta función.
+        } catch (e) { 
+          console.warn("No se pudo comprobar la verificación:", e); 
+        }
         await refreshClaimStatus();
       } else {
-        console.log("checkStatus: Esperando la dirección de la billetera...");
+        setIsClaimStatusLoading(false);
       }
-      // --- MODIFICACIÓN 2 FIN ---
     };
-      checkStatus();
+    checkStatus();
   }, [walletAddress]);
 
   useEffect(() => {
@@ -167,8 +161,11 @@ export default function HomePage() {
       return <div className="h-10"><p>Verificando estado...</p></div>;
     }
     if (canClaim) {
-      const buttonText = claimStatus === 'sending' ? 'Enviando...' : claimStatus === 'confirming' ? 'Confirmando...' : 'Reclamar Tokens';
-      return <Button onClick={handleClaimTokens} disabled={claimStatus !== 'idle'} size="lg" variant="primary" className="w-full">{buttonText}</Button>;
+      return (
+        <Button onClick={handleClaimTokens} disabled={claimStatus !== 'idle'} size="lg" variant="primary" className="w-full">
+          Reclamar Tokens
+        </Button>
+      );
     } else {
       return <div className="text-center p-2 bg-black/20 rounded-lg"><p className="text-sm text-gray-300">Próximo reclamo en:</p><p className="text-xl font-bold">{countdown || '...'}</p></div>;
     }
