@@ -23,7 +23,8 @@ const coinIpfsUrl = "https://gateway.pinata.cloud/ipfs/bafybeielalf3z7q7x7vngejt
 const EXPLORER_URL = "https://worldscan.org";
 
 export default function HomePage() {
-  const { data: session } = useSession();
+  // Ahora también obtenemos el `status` de la sesión.
+  const { data: session, status } = useSession();
   const walletAddress = session?.user?.walletAddress;
 
   // Estados
@@ -51,18 +52,13 @@ export default function HomePage() {
     transactionId: transactionId,
   });
 
-  const refreshClaimStatus = async () => {
-    if (!isAddress(walletAddress as string)) {
-      console.warn("Intento de refrescar estado sin una dirección válida.");
-      setIsClaimStatusLoading(false);
-      return;
-    }
-    
+  const refreshClaimStatus = async (address: `0x${string}`) => {
+    // La dirección ahora se pasa como argumento, por lo que no hay ambigüedad.
     setIsClaimStatusLoading(true);
     try {
       const [lastClaim, claimFrequency] = await Promise.all([
-        publicClient.readContract({ address: chrn_abi_CONTRACT_ADDRESS as `0x${string}`, abi: chrn_abiABI as any, functionName: 'lastClaimed', args: [walletAddress as `0x${string}`] }),
-        publicClient.readContract({ address: chrn_abi_CONTRACT_ADDRESS as `0x${string}`, abi: chrn_abiABI as any, functionName: 'CLAIM_INTERVAL' })
+        publicClient.readContract({ address: chrn_abi_CONTRACT_ADDRESS, abi: chrn_abiABI as any, functionName: 'lastClaimed', args: [address] }),
+        publicClient.readContract({ address: chrn_abi_CONTRACT_ADDRESS, abi: chrn_abiABI as any, functionName: 'CLAIM_INTERVAL' })
       ]);
       setNextClaimTimestamp(Number(lastClaim) + Number(claimFrequency));
     } catch (err) { 
@@ -72,22 +68,27 @@ export default function HomePage() {
     }
   };
 
+  // El useEffect ahora depende del `status` de la sesión para una ejecución segura.
   useEffect(() => {
     const checkStatus = async () => {
-      if (isAddress(walletAddress as string)) {
+      // Solo se ejecuta si la sesión está completamente autenticada Y la dirección es válida.
+      if (status === 'authenticated' && isAddress(walletAddress as string)) {
         try {
-          const verificationStatus = await getIsUserVerified();
+          // Pasamos la dirección explícitamente para mayor seguridad.
+          const verificationStatus = await getIsUserVerified({ walletAddress });
           if (verificationStatus.isVerified) setIsVerified(true);
         } catch (e) { 
-          console.warn("No se pudo comprobar la verificación:", e); 
+          console.error("Error al verificar el usuario:", e); 
         }
-        await refreshClaimStatus();
-      } else {
+        // Pasamos la dirección válida como argumento.
+        await refreshClaimStatus(walletAddress as `0x${string}`);
+      } else if (status !== 'loading') {
+        // Si no está cargando y no está autenticado, dejamos de mostrar el spinner.
         setIsClaimStatusLoading(false);
       }
     };
     checkStatus();
-  }, [walletAddress]);
+  }, [status, walletAddress]); // Se ejecuta cuando el estado o la dirección cambian.
 
   useEffect(() => {
     if (transactionId && isConfirming) {
@@ -95,14 +96,16 @@ export default function HomePage() {
     } else if (transactionId && isConfirmed && receipt) {
       setClaimStatus('success');
       setOnChainTxHash(receipt.transactionHash);
-      setTimeout(refreshClaimStatus, 2000);
+      if (isAddress(walletAddress as string)) {
+        setTimeout(() => refreshClaimStatus(walletAddress as `0x${string}`), 2000);
+      }
       setTimeout(() => { setClaimStatus('idle'); setTransactionId(''); }, 8000);
     } else if (transactionId && isError) {
       setClaimStatus('error');
       setClaimError('La transacción falló en la red.');
       setTimeout(() => { setClaimStatus('idle'); setTransactionId(''); }, 5000);
     }
-  }, [isConfirming, isConfirmed, isError, receipt, transactionId]);
+  }, [isConfirming, isConfirmed, isError, receipt, transactionId, walletAddress]);
 
   useEffect(() => {
     if (!nextClaimTimestamp) return;
@@ -157,7 +160,7 @@ export default function HomePage() {
   const canClaim = !isClaimStatusLoading && (!nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000));
 
   const renderClaimSection = () => {
-    if (isClaimStatusLoading) {
+    if (status === 'loading' || isClaimStatusLoading) {
       return <div className="h-10"><p>Verificando estado...</p></div>;
     }
     if (canClaim) {
@@ -223,4 +226,4 @@ export default function HomePage() {
       <Page.Footer className="px-0 fixed bottom-0 w-full"><Navigation /></Page.Footer>
     </Page>
   );
-}
+        }
