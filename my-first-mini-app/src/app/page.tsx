@@ -27,7 +27,7 @@ export default function CustomLoginPage() {
   // El componente Verify llamará a esta función cuando la verificación sea exitosa.
   const handleVerificationSuccess = () => {
     // Se reemplaza router.push por una función nativa del navegador.
-    window.location.href = '/home'; 
+    window.location.href = '/Home'; 
   };
   // --- FIN DE LA LÓGICA AÑADIDA ---
 
