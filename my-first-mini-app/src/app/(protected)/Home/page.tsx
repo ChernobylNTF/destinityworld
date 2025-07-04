@@ -4,19 +4,17 @@ import Navigation from '@/components/Navigation';
 import { Page } from '@/components/PageLayout';
 import { TopBar, Marble } from '@worldcoin/mini-apps-ui-kit-react';
 import { useState, useEffect, useMemo } from 'react';
-import { useSession, signOut } from 'next-auth/react';
+// Se elimina la importación de 'useSession' y 'signOut'
 import Link from 'next/link';
 import SpinningCoin from '@/components/SpinningCoin';
-import { Verify } from '@/components/Verify'; // <-- IMPORTACIÓN ACTUALIZADA
+// Se elimina la importación de 'Verify' y 'getIsUserVerified'
 
 // Lógica de Blockchain
-import { getIsUserVerified } from "@worldcoin/minikit-js";
 import { useWaitForTransactionReceipt } from '@worldcoin/minikit-react';
 import { createPublicClient, http, type TransactionReceipt, isAddress } from 'viem';
 import { worldchain } from 'viem/chains';
 import chrn_abiABI from '@/abi/chrn_abi.json';
 import { MiniKit } from '@worldcoin/minikit-js';
-
 
 // --- CONFIGURACIÓN ---
 const chrn_abi_CONTRACT_ADDRESS = '0xc418b282f205c3f4942451676dd064496ee69be4';
@@ -25,12 +23,11 @@ const coinIpfsUrl = "https://gateway.pinata.cloud/ipfs/bafybeielalf3z7q7x7vngejt
 const EXPLORER_URL = "https://worldscan.org";
 
 export default function HomePage() {
-  const { data: session, status } = useSession();
-  const walletAddress = session?.user?.walletAddress;
+  // Necesitarás una forma de obtener la walletAddress aquí.
+  // Esto dependerá de tu librería de conexión de wallet (por ejemplo, wagmi, ethers, etc.).
+  const [walletAddress, setWalletAddress] = useState<`0x${string}` | null>(null);
 
   // --- ESTADOS ---
-  const [isVerified, setIsVerified] = useState(false);
-  // Los estados 'isVerifying' y 'verificationError' se han movido a components/Verify.tsx
   const [claimError, setClaimError] = useState<string | null>(null);
   const [claimStatus, setClaimStatus] = useState<'idle' | 'sending' | 'confirming' | 'success' | 'error'>('idle');
   const [nextClaimTimestamp, setNextClaimTimestamp] = useState<number | null>(null);
@@ -71,34 +68,28 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    const checkStatus = async () => {
-      if (status === 'authenticated' && isAddress(walletAddress as string)) {
-        try {
-          const verificationStatus = await getIsUserVerified({ walletAddress });
-          if (verificationStatus.isVerified) setIsVerified(true);
-        } catch (e) { 
-          console.error("Error verifying user:", e); 
-        }
-        await refreshClaimStatus(walletAddress as `0x${string}`);
-      } else if (status !== 'loading') {
-        setIsClaimStatusLoading(false);
-      }
-    };
-    checkStatus();
-  }, [status, walletAddress]);
+    // Aquí deberías establecer la dirección de la wallet desde tu librería de conexión.
+    // Por ejemplo: const { address } = useAccount(); setWalletAddress(address);
+    if (walletAddress && isAddress(walletAddress)) {
+      refreshClaimStatus(walletAddress);
+    } else {
+      // Si no hay wallet, podrías querer manejarlo, por ahora solo detenemos la carga.
+      setIsClaimStatusLoading(false);
+    }
+  }, [walletAddress]);
 
   useEffect(() => {
     if (transactionId && isConfirming) setClaimStatus('confirming');
     else if (transactionId && isConfirmed && receipt) {
       setClaimStatus('success');
       setOnChainTxHash(receipt.transactionHash);
-      if (isAddress(walletAddress as string)) {
-        setTimeout(() => refreshClaimStatus(walletAddress as `0x${string}`), 2000);
+      if (walletAddress && isAddress(walletAddress)) {
+        setTimeout(() => refreshClaimStatus(walletAddress), 2000);
       }
       setTimeout(() => { setClaimStatus('idle'); setTransactionId(''); }, 8000);
     } else if (transactionId && isError) {
       setClaimStatus('error');
-      setClaimError('Transaction failed on-chain.');
+      setClaimError('La transacción en la cadena falló.');
       setTimeout(() => { setClaimStatus('idle'); setTransactionId(''); }, 5000);
     }
   }, [isConfirming, isConfirmed, isError, receipt, transactionId, walletAddress]);
@@ -121,9 +112,6 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [nextClaimTimestamp]);
   
-  // Esta función se pasa como prop al componente Verify
-  const handleVerificationSuccess = () => setIsVerified(true);
-
   const handleClaimTokens = async () => {
     const canClaim = !isClaimStatusLoading && (!nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000));
     if (!canClaim || claimStatus !== 'idle') return;
@@ -137,11 +125,11 @@ export default function HomePage() {
       if (finalPayload.status === 'success' && finalPayload.transaction_id) {
         setTransactionId(finalPayload.transaction_id);
       } else {
-        throw new Error(finalPayload.error_code ?? 'Transaction rejected in MiniKit.');
+        throw new Error(finalPayload.error_code ?? 'Transacción rechazada en MiniKit.');
       }
     } catch (err: any) {
-      console.error("Error initiating claim:", err);
-      setClaimError(err.message || "Transaction was rejected.");
+      console.error("Error al iniciar el reclamo:", err);
+      setClaimError(err.message || "La transacción fue rechazada.");
       setClaimStatus('idle');
     }
   };
@@ -149,7 +137,7 @@ export default function HomePage() {
   const canClaim = !isClaimStatusLoading && (!nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000));
 
   const renderClaimSection = () => {
-    if (status === 'loading' || isClaimStatusLoading) return <div className="h-10"><p>Verificando estado...</p></div>;
+    if (isClaimStatusLoading) return <div className="h-10"><p>Verificando estado...</p></div>;
     if (canClaim) {
       return (
         <button onClick={handleClaimTokens} disabled={claimStatus !== 'idle'} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors">
@@ -161,57 +149,32 @@ export default function HomePage() {
     }
   };
 
-  // --- RENDERIZADO DEL COMPONENTE ---
   return (
     <Page>
       <Page.Header className="p-0 bg-gradient-to-br from-gray-900 to-blue-900">
-        <TopBar
-          title="DESTINITY"
-          startAdornment={
-            <button onClick={() => signOut()} className="p-2 rounded-full hover:bg-white/10 transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          }
-          endAdornment={
-            session?.user && (
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold capitalize">{session.user.username}</p>
-                <Marble src={session.user.profilePictureUrl} className="w-8 h-8 rounded-full" />
-              </div>
-            )
-          }
-        />
+        <TopBar title="DESTINITY" />
       </Page.Header>
       <Page.Main className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-blue-900 text-white min-h-screen pb-20">
         <div className="flex flex-col items-center gap-4">
           <p className="text-5xl font-black text-yellow-400">DESTINITY</p>
           <SpinningCoin ipfsUrl={coinIpfsUrl} />
           
-          {!isVerified && (
-            // <-- USO DEL COMPONENTE MODULARIZADO
-            <Verify onSuccess={handleVerificationSuccess} />
-          )}
-
-          {isVerified && (
-            <div className="w-full max-w-sm text-center mt-4">
-              {renderClaimSection()}
-              <div className="h-10 mt-2 text-sm flex flex-col items-center justify-center">
-                {claimStatus === 'error' && <p className="text-red-400">{claimError}</p>}
-                {claimStatus === 'success' && (
-                  <div className="text-center">
-                    <p className="text-green-400">¡Tokens reclamados con éxito!</p>
-                    {onChainTxHash && (
-                      <Link href={`${EXPLORER_URL}/tx/${onChainTxHash}`} target="_blank" className="text-blue-400 hover:underline text-xs">
-                        Ver transacción
-                      </Link>
-                    )}
-                  </div>
-                )}
-              </div>
+          <div className="w-full max-w-sm text-center mt-4">
+            {renderClaimSection()}
+            <div className="h-10 mt-2 text-sm flex flex-col items-center justify-center">
+              {claimStatus === 'error' && <p className="text-red-400">{claimError}</p>}
+              {claimStatus === 'success' && (
+                <div className="text-center">
+                  <p className="text-green-400">¡Tokens reclamados con éxito!</p>
+                  {onChainTxHash && (
+                    <a href={`${EXPLORER_URL}/tx/${onChainTxHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline text-xs">
+                      Ver transacción
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </Page.Main>
       <Page.Footer className="px-0 fixed bottom-0 w-full"><Navigation /></Page.Footer>
