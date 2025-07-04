@@ -2,33 +2,35 @@
 
 import Navigation from '@/components/Navigation';
 import { Page } from '@/components/PageLayout';
-import { Verify } from '@/components/Verify';
-import { Button, TopBar, Marble } from '@worldcoin/mini-apps-ui-kit-react';
+import { TopBar, Marble } from '@worldcoin/mini-apps-ui-kit-react';
 import { useState, useEffect, useMemo } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import SpinningCoin from '@/components/SpinningCoin';
+import { Verify } from '@/components/Verify'; // <-- IMPORTACIÓN ACTUALIZADA
 
 // Lógica de Blockchain
-import { MiniKit, getIsUserVerified } from "@worldcoin/minikit-js";
+import { getIsUserVerified } from "@worldcoin/minikit-js";
 import { useWaitForTransactionReceipt } from '@worldcoin/minikit-react';
 import { createPublicClient, http, type TransactionReceipt, isAddress } from 'viem';
 import { worldchain } from 'viem/chains';
 import chrn_abiABI from '@/abi/chrn_abi.json';
+import { MiniKit } from '@worldcoin/minikit-js';
 
-// Configuración
+
+// --- CONFIGURACIÓN ---
 const chrn_abi_CONTRACT_ADDRESS = '0xc418b282f205c3f4942451676dd064496ee69be4';
 const WORLDCHAIN_RPC_URL = 'https://worldchain-mainnet.g.alchemy.com/public';
 const coinIpfsUrl = "https://gateway.pinata.cloud/ipfs/bafybeielalf3z7q7x7vngejt53qosizddaltox7laqngxjdqhf2vyn6egq";
 const EXPLORER_URL = "https://worldscan.org";
 
 export default function HomePage() {
-  // Ahora también obtenemos el `status` de la sesión.
   const { data: session, status } = useSession();
   const walletAddress = session?.user?.walletAddress;
 
-  // Estados
+  // --- ESTADOS ---
   const [isVerified, setIsVerified] = useState(false);
+  // Los estados 'isVerifying' y 'verificationError' se han movido a components/Verify.tsx
   const [claimError, setClaimError] = useState<string | null>(null);
   const [claimStatus, setClaimStatus] = useState<'idle' | 'sending' | 'confirming' | 'success' | 'error'>('idle');
   const [nextClaimTimestamp, setNextClaimTimestamp] = useState<number | null>(null);
@@ -52,8 +54,8 @@ export default function HomePage() {
     transactionId: transactionId,
   });
 
+  // --- EFECTOS Y FUNCIONES ---
   const refreshClaimStatus = async (address: `0x${string}`) => {
-    // La dirección ahora se pasa como argumento, por lo que no hay ambigüedad.
     setIsClaimStatusLoading(true);
     try {
       const [lastClaim, claimFrequency] = await Promise.all([
@@ -62,38 +64,32 @@ export default function HomePage() {
       ]);
       setNextClaimTimestamp(Number(lastClaim) + Number(claimFrequency));
     } catch (err) { 
-      console.error("Error al obtener estado de reclamo:", err); 
+      console.error("Error fetching claim status:", err); 
     } finally { 
       setIsClaimStatusLoading(false); 
     }
   };
 
-  // El useEffect ahora depende del `status` de la sesión para una ejecución segura.
   useEffect(() => {
     const checkStatus = async () => {
-      // Solo se ejecuta si la sesión está completamente autenticada Y la dirección es válida.
       if (status === 'authenticated' && isAddress(walletAddress as string)) {
         try {
-          // Pasamos la dirección explícitamente para mayor seguridad.
           const verificationStatus = await getIsUserVerified({ walletAddress });
           if (verificationStatus.isVerified) setIsVerified(true);
         } catch (e) { 
-          console.error("Error al verificar el usuario:", e); 
+          console.error("Error verifying user:", e); 
         }
-        // Pasamos la dirección válida como argumento.
         await refreshClaimStatus(walletAddress as `0x${string}`);
       } else if (status !== 'loading') {
-        // Si no está cargando y no está autenticado, dejamos de mostrar el spinner.
         setIsClaimStatusLoading(false);
       }
     };
     checkStatus();
-  }, [status, walletAddress]); // Se ejecuta cuando el estado o la dirección cambian.
+  }, [status, walletAddress]);
 
   useEffect(() => {
-    if (transactionId && isConfirming) {
-      setClaimStatus('confirming');
-    } else if (transactionId && isConfirmed && receipt) {
+    if (transactionId && isConfirming) setClaimStatus('confirming');
+    else if (transactionId && isConfirmed && receipt) {
       setClaimStatus('success');
       setOnChainTxHash(receipt.transactionHash);
       if (isAddress(walletAddress as string)) {
@@ -102,7 +98,7 @@ export default function HomePage() {
       setTimeout(() => { setClaimStatus('idle'); setTransactionId(''); }, 8000);
     } else if (transactionId && isError) {
       setClaimStatus('error');
-      setClaimError('La transacción falló en la red.');
+      setClaimError('Transaction failed on-chain.');
       setTimeout(() => { setClaimStatus('idle'); setTransactionId(''); }, 5000);
     }
   }, [isConfirming, isConfirmed, isError, receipt, transactionId, walletAddress]);
@@ -125,34 +121,27 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [nextClaimTimestamp]);
   
+  // Esta función se pasa como prop al componente Verify
   const handleVerificationSuccess = () => setIsVerified(true);
 
   const handleClaimTokens = async () => {
     const canClaim = !isClaimStatusLoading && (!nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000));
     if (!canClaim || claimStatus !== 'idle') return;
-
     setClaimStatus('sending');
     setClaimError(null);
     setOnChainTxHash('');
-
     try {
       const { finalPayload } = await MiniKit.commandsAsync.sendTransaction({
-        transaction: [{ 
-          address: chrn_abi_CONTRACT_ADDRESS, 
-          abi: chrn_abiABI as any, 
-          functionName: 'claimDailyToken', 
-          args: [] 
-        }],
+        transaction: [{ address: chrn_abi_CONTRACT_ADDRESS, abi: chrn_abiABI as any, functionName: 'claimDailyToken', args: [] }],
       });
-
       if (finalPayload.status === 'success' && finalPayload.transaction_id) {
         setTransactionId(finalPayload.transaction_id);
       } else {
-        throw new Error(finalPayload.error_code ?? 'Transacción rechazada en MiniKit.');
+        throw new Error(finalPayload.error_code ?? 'Transaction rejected in MiniKit.');
       }
     } catch (err: any) {
-      console.error("Error al iniciar el reclamo:", err);
-      setClaimError(err.message || "La transacción fue rechazada.");
+      console.error("Error initiating claim:", err);
+      setClaimError(err.message || "Transaction was rejected.");
       setClaimStatus('idle');
     }
   };
@@ -160,20 +149,19 @@ export default function HomePage() {
   const canClaim = !isClaimStatusLoading && (!nextClaimTimestamp || nextClaimTimestamp < Math.floor(Date.now() / 1000));
 
   const renderClaimSection = () => {
-    if (status === 'loading' || isClaimStatusLoading) {
-      return <div className="h-10"><p>Verificando estado...</p></div>;
-    }
+    if (status === 'loading' || isClaimStatusLoading) return <div className="h-10"><p>Verificando estado...</p></div>;
     if (canClaim) {
       return (
-        <Button onClick={handleClaimTokens} disabled={claimStatus !== 'idle'} size="lg" variant="primary" className="w-full">
+        <button onClick={handleClaimTokens} disabled={claimStatus !== 'idle'} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors">
           Reclamar Tokens
-        </Button>
+        </button>
       );
     } else {
       return <div className="text-center p-2 bg-black/20 rounded-lg"><p className="text-sm text-gray-300">Próximo reclamo en:</p><p className="text-xl font-bold">{countdown || '...'}</p></div>;
     }
   };
 
+  // --- RENDERIZADO DEL COMPONENTE ---
   return (
     <Page>
       <Page.Header className="p-0 bg-gradient-to-br from-gray-900 to-blue-900">
@@ -189,9 +177,7 @@ export default function HomePage() {
           endAdornment={
             session?.user && (
               <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold capitalize">
-                  {session.user.username}
-                </p>
+                <p className="text-sm font-semibold capitalize">{session.user.username}</p>
                 <Marble src={session.user.profilePictureUrl} className="w-8 h-8 rounded-full" />
               </div>
             )
@@ -202,7 +188,12 @@ export default function HomePage() {
         <div className="flex flex-col items-center gap-4">
           <p className="text-5xl font-black text-yellow-400">DESTINITY</p>
           <SpinningCoin ipfsUrl={coinIpfsUrl} />
-          {!isVerified && <div className="w-full max-w-sm"><Verify onSuccess={handleVerificationSuccess} /></div>}
+          
+          {!isVerified && (
+            // <-- USO DEL COMPONENTE MODULARIZADO
+            <Verify onSuccess={handleVerificationSuccess} />
+          )}
+
           {isVerified && (
             <div className="w-full max-w-sm text-center mt-4">
               {renderClaimSection()}
@@ -226,4 +217,4 @@ export default function HomePage() {
       <Page.Footer className="px-0 fixed bottom-0 w-full"><Navigation /></Page.Footer>
     </Page>
   );
-        }
+}
